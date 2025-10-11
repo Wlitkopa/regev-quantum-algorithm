@@ -10,7 +10,7 @@ This repository contains an implementation of the quantum Regev's algorithm. It 
 
 1. Clone the repository and navigate to the project directory.
 ```bash
-git clone https://github.com/Wlitkopa/engineer-thesis.git
+git clone https://github.com/Wlitkopa/regev-quantum-algorithm.git
 
 cd engineer-thesis
 ```
