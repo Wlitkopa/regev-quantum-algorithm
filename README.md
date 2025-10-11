@@ -12,7 +12,7 @@ This repository contains an implementation of the quantum Regev's algorithm. It 
 ```bash
 git clone https://github.com/Wlitkopa/regev-quantum-algorithm.git
 
-cd engineer-thesis
+cd regev-quantum-algorithm
 ```
 
 2. Create and activate a virtual environment.
