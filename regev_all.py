@@ -2,7 +2,6 @@ from sympy.core.random import choice
 
 from implementations.r_haner import HanerRegev as Regev
 
-
 # Set the following parameters according to the needs
 
 # Possible parameters values for Ns, d_qd_list and type_of_test_array variables
@@ -35,36 +34,6 @@ find_pq = True
 
 # Parameter denoting if a decomposed version of quantum circuit should be drawn (drawing quantum circuit)
 decompose = False
-
-
-while True:
-    print("========== REGEV'S ALGORITHM ==========\n")
-
-    print('''Choose an option:
-    1. Run all algorithm
-    2. Run quantum part
-    3. Run classical part
-    4. Draw quantum circuit
-    5. Exit''')
-
-    while True:
-        try:
-            choice = int(input())
-            break
-        except ValueError:
-            print("Please enter a number.")
-            continue
-
-    match choice:
-        case 1:
-            print("------- Running all algorithm -------")
-            regev.run_all_algorithm(Ns, d_qd_list, number_of_combinations, type_of_test, find_pq)
-            print("Finished running all algorithm. The results are saved in output_data/regev/all_parts folder")
-            continue
-
-# Parameter denoting if a decomposed version of quantum circuit should be drawn (drawing quantum circuit)
-decompose = False
-
 
 while True:
     print("========== REGEV'S ALGORITHM ==========\n")

@@ -1,6 +1,12 @@
 # Regev's Algorithm for IBM Qiskit
 
-This repository contains an implementation of the quantum Regev's algorithm. It is executed on a local quantum computer simulator using IBM Qiskit.
+This repository is a copy of the repo containing an implementation of Regev's algorithm.
+Original repo: https://github.com/Wlitkopa/regev-quantum-algorithm.git
+
+This repo will contain modifications/additions to the original Regev's algorithm implementation.
+
+Main purpose of the code in this repository will be to prepare initial qubits in Regev's algorithm 
+in multidimensional Gaussian superposition.
 
 ## Requirements
 
