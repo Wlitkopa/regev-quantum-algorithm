@@ -15,6 +15,8 @@ from utils.is_prime import is_prime
 from utils.convert_measurement import convert_measurement
 from utils.convert_to_matrix_row import convert_to_matrix_row
 from utils.convert_milliseconds import convert_milliseconds
+from utils.calculate_R import calculate_R
+from utils.gaussian_amplitudes import gaussian_amplitudes
 
 import logging
 import math
@@ -52,7 +54,7 @@ class Regev(ABC):
         self.vectors = []
 
 
-    def draw_quantum_circuit(self, Ns, d_qd_list, decompose=False):
+    def draw_quantum_circuit(self, Ns, d_qd_list, decompose=False, gauss_init=False):
 
         for i in range(len(d_qd_list)):
             d_ceil_bool = d_qd_list[i][0]
@@ -72,15 +74,19 @@ class Regev(ABC):
                 else:
                     qd_mode = "floor"
 
-                circuit = self.construct_circuit(N, d_ceil_bool, qd_ceil_bool)
+                circuit = self.construct_circuit(N, d_ceil_bool, qd_ceil_bool, gauss_init=gauss_init)
 
                 if decompose:
-                    circuit.decompose().draw(output='mpl', filename=f'images/sandbox/{d_mode}_{qd_mode}/N_{N}.png', style='iqp-dark', fold=-1)
+                    filename = f'images/gauss/decomposed/{d_mode}_{qd_mode}/N_{N}.png'
+                    circuit.decompose().draw(output='mpl', filename=filename, style='iqp-dark', fold=-1)
+                    print(f"Created file: {filename}")
                 else:
-                    circuit.draw(output='mpl', filename=f'images/sandbox/{d_mode}_{qd_mode}/N_{N}.png', style='iqp-dark', fold=-1)
+                    filename = f'images/gauss/general/{d_mode}_{qd_mode}/N_{N}.png'
+                    circuit.draw(output='mpl', filename=filename, style='iqp-dark', fold=-1)
+                    print(f"Created file: {filename}")
 
 
-    def run_all_algorithm(self, Ns, d_qd_list, number_of_combinations, type_of_test, find_pq=False):
+    def run_all_algorithm(self, Ns, d_qd_list, number_of_combinations, type_of_test, find_pq=False, gauss_init=False):
         for i in range(len(d_qd_list)):
             d_ceil_bool = d_qd_list[i][0]
             qd_ceil_bool = d_qd_list[i][1]
@@ -102,7 +108,7 @@ class Regev(ABC):
 
                 print(f"\nN: {N}")
                 start = time.time()
-                quantum_result = self.get_vectors(N, d_ceil=d_ceil_bool, qd_ceil=qd_ceil_bool, semi_classical=False)
+                quantum_result = self.get_vectors(N, d_ceil=d_ceil_bool, qd_ceil=qd_ceil_bool, semi_classical=False, gauss_init=gauss_init)
                 classic_result = self.run_classical_part(number_of_combinations, N, quantum_result.n, quantum_result.number_of_primes, quantum_result.exp_register_width, quantum_result.squared_primes, quantum_result.output_data, type_of_test, find_pq)
                 end = time.time()
                 exec_time = (end - start) * 1000
@@ -204,7 +210,11 @@ class Regev(ABC):
             if T_tmp % N == 1 and v_len_tmp < T:
                 T = v_len_tmp
 
-        R = math.ceil(6 * T * math.sqrt((d + 5) * (2 * d) + 4) * (d / 2) * (2 ** ((qd + 1) / (d + 4) + d + 2)))
+        # Stara wersja R
+        # R = math.ceil(6 * T * math.sqrt((d + 5) * (2 * d) + 4) * (d / 2) * (2 ** ((qd + 1) / (d + 4) + d + 2)))
+        # Nowa wersja R
+        R = math.ceil(6 * T * math.sqrt((d + 5) * (2 * d + 4) * (d / 2)) * (2 ** ((n + 1) / (d + 4) + d + 2)))
+
         t = 1 + math.ceil(math.log(math.sqrt(d) * R, 2))
         delta = math.sqrt(d / 2) / R
         delta_inv = math.ceil(R / math.sqrt(d / 2))
@@ -283,7 +293,7 @@ class Regev(ABC):
         return classic_result
 
 
-    def run_quantum_part_data_collection(self, Ns, d_qd_list):
+    def run_quantum_part_data_collection(self, Ns, d_qd_list, gauss_init):
 
         for i in range(len(d_qd_list)):
             d_ceil_bool = d_qd_list[i][0]
@@ -295,7 +305,7 @@ class Regev(ABC):
                 print(f"\nN: {N}")
 
                 start = time.time()
-                result = self.get_vectors(N, d_ceil=d_ceil_bool, qd_ceil=qd_ceil_bool, semi_classical=False)
+                result = self.get_vectors(N, d_ceil=d_ceil_bool, qd_ceil=qd_ceil_bool, semi_classical=False, gauss_init=gauss_init)
                 end = time.time()
                 exec_time = (end - start) * (10 ** 3)
                 converted_time = convert_milliseconds(exec_time)
@@ -559,14 +569,14 @@ class Regev(ABC):
                         self.get_factors(vector, a_root, N)
 
 
-    def get_vectors(self, N: int, d_ceil=False, qd_ceil=False, semi_classical=False) -> 'RegevResult':
+    def get_vectors(self, N: int, d_ceil=False, qd_ceil=False, semi_classical=False, gauss_init=False) -> 'RegevResult':
 
         print("Running quantum part")
 
         start = time.time()
         self._validate_input(N)
 
-        circuit = self.construct_circuit(N, d_ceil, qd_ceil, semi_classical, measurement=True)
+        circuit = self.construct_circuit(N, d_ceil, qd_ceil, semi_classical, measurement=True, gauss_init=gauss_init)
         # aersim = AerSimulator(method="extended_stabilizer")
         aersim = AerSimulator()
 
@@ -610,7 +620,7 @@ class Regev(ABC):
         return int(measurement, base=2)
 
 
-    def construct_circuit(self, N: int, d_ceil, qd_ceil, semi_classical: bool = False, measurement: bool = True):
+    def construct_circuit(self, N: int, d_ceil, qd_ceil, semi_classical: bool = False, measurement: bool = True, gauss_init: bool = False):
         self._validate_input(N)
 
         n = N.bit_length()
@@ -633,7 +643,7 @@ class Regev(ABC):
         self.result.exp_register_width = qd
 
 
-        return self._construct_circuit(N, n, measurement, d, qd)
+        return self._construct_circuit(N, n, measurement, d, qd, gauss_init)
 
 
     @staticmethod
@@ -660,11 +670,12 @@ class Regev(ABC):
             raise ValueError(f'The input N needs to be an odd integer greater than 1. Provided N = {N}.')
 
 
-    def _construct_circuit(self, N: int, n: int, measurement: bool, d: int, qd: int) -> QuantumCircuit:
+    def _construct_circuit(self, N: int, n: int, measurement: bool, d: int, qd: int, gauss_init: bool) -> QuantumCircuit:
 
-
+        # Prepare params
         x_qregs_spec = dict()
         a = self.generate_a(d, N)
+
 
         # Input registers, each has qd-qubits
         for i in range(d):
@@ -678,9 +689,22 @@ class Regev(ABC):
         aux_qreg = AncillaRegister(self._get_aux_register_size(n), 'aux')
         circuit = QuantumCircuit(*x_qregs, y_qreg, aux_qreg, name=self._get_name(N, d))
 
-        # Initializing input register's qubits superposition
-        for qreg in x_qregs:
-            circuit.h(qreg)
+        if gauss_init:
+            # Initializing input register's qubits gaussian superposition
+            mu = 0
+            R = calculate_R(d, qd, N, n, a)
+            sigma = R/math.sqrt(2*math.pi)
+            amps = gaussian_amplitudes(qd, mu=mu, sigma=sigma)
+
+            for qreg in x_qregs:
+                # circuit.initialize(amps, [j for j in range(st, en)])
+                circuit.initialize(amps, qreg)
+            pass
+
+        else:
+            # Initializing input register's qubits uniform superposition
+            for qreg in x_qregs:
+                circuit.h(qreg)
 
         circuit.x(y_qreg[0])
 

@@ -18,7 +18,7 @@ regev = Regev(shots_num)
 Ns = [21]
 
 # d and qd parameters combination (for running 'all parts', 'quantum part', 'classical part' and 'drawing quantum circuit')
-d_qd_list = [[False, True], [False, False]]
+d_qd_list = [[True, True], [False, False]]
 
 # Number of combinations of picking up output vectors to create lattice (for running 'all parts', 'classical part')
 number_of_combinations = 100
@@ -34,6 +34,10 @@ find_pq = True
 
 # Parameter denoting if a decomposed version of quantum circuit should be drawn (drawing quantum circuit)
 decompose = False
+
+# Parameter initiating initial superposition in gaussian distribution
+gauss_init = True
+
 
 while True:
     print("========== REGEV'S ALGORITHM ==========\n")
@@ -56,13 +60,13 @@ while True:
     match choice:
         case 1:
             print("------- Running all algorithm -------")
-            regev.run_all_algorithm(Ns, d_qd_list, number_of_combinations, type_of_test, find_pq)
+            regev.run_all_algorithm(Ns, d_qd_list, number_of_combinations, type_of_test, find_pq, gauss_init)
             print("Finished running all algorithm. The results are saved in output_data/regev/all_parts folder")
             continue
 
         case 2:
             print("------- Running quantum part -------")
-            regev.run_quantum_part_data_collection(Ns, d_qd_list)
+            regev.run_quantum_part_data_collection(Ns, d_qd_list, gauss_init)
             print("Finished running quantum part. The results are saved in output_data/regev/quantum_part folder")
             continue
 
@@ -74,8 +78,8 @@ while True:
 
         case 4:
             print("------- Drawing quantum circuit -------")
-            regev.draw_quantum_circuit(Ns, d_qd_list, decompose)
-            print("Finished running drawing quantum circuit. The results are saved in images/general and/or images/decomposed folder")
+            regev.draw_quantum_circuit(Ns, d_qd_list, decompose, gauss_init)
+            print("Finished running drawing quantum circuit")
             continue
 
         case 5:

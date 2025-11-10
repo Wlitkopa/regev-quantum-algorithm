@@ -1,3 +1,4 @@
+from operator import truediv
 from typing import Union, Tuple, Optional
 
 import numpy as np
@@ -59,7 +60,7 @@ def gaussian_amplitudes(n_qubits: int, mu=None, sigma=None):
     if mu is None:
         mu = (dim - 1) / 2.0                     # środek
     if sigma is None:
-        sigma = dim / 8.0                        # domyślna "szerokość" (dobierz wg potrzeb)
+        sigma = dim / 8.0                        # domyślna "szerokość"
 
     # amplitudy proporcjonalne do e^{-(x-mu)^2 / (2*sigma^2)}
     amp = np.exp(-0.5 * ((x - mu) / sigma) ** 2)
@@ -71,13 +72,63 @@ def gaussian_amplitudes(n_qubits: int, mu=None, sigma=None):
     amp = amp / norm
     return amp.astype(complex)
 
-# n = 10
-mu = None
-sigma = None
 
+# PARAMS
+N = 21
+a = [4, 25, 121]
 d = 2
 qd = 3
 n = d*qd
+mu = 0
+sigma = None
+
+# n = N.bit_length()
+print(f"n: {n}")
+d_ceil = True
+qd_ceil = True
+a_root = []
+
+start = time.time()
+
+for a_ in a:
+    a_root.append(int(math.sqrt(a_)))
+
+
+
+# if d_ceil:
+#     d = math.ceil(math.sqrt(n))
+# else:
+#     d = math.floor(math.sqrt(n))
+#
+# if qd_ceil:
+#     qd = math.ceil(n / d) + d
+# else:
+#     qd = math.floor(n / d) + d
+
+
+m = math.ceil(n / d) + 2
+powers = []
+for i in range(m):
+    powers.append(i)
+
+T = N
+
+for p in itertools.product(powers, repeat=d):
+    if p == (0,) * d:
+        continue
+    T_tmp = 1
+    v_len_tmp = 1
+    for i in range(d):
+        T_tmp *= pow(a_root[i], p[i], N)
+        v_len_tmp += pow(p[i], 2)
+    v_len_tmp = math.ceil(math.sqrt(v_len_tmp))
+    if T_tmp % N == 1 and v_len_tmp < T:
+        T = v_len_tmp
+
+R = math.ceil(6 * T * math.sqrt((d + 5) * (2 * d + 4) * (d / 2)) * (2 ** ((n + 1) / (d + 4) + d + 2)))
+print(f"R: {R}")
+sigma = R/math.sqrt(2*math.pi)
+print(f"sigma: {sigma}")
 
 # 1) amplitudy Gaussa
 amps = gaussian_amplitudes(qd, mu=mu, sigma=sigma)
