@@ -125,9 +125,9 @@ for p in itertools.product(powers, repeat=d):
     if T_tmp % N == 1 and v_len_tmp < T:
         T = v_len_tmp
 
-R = math.ceil(6 * T * math.sqrt((d + 5) * (2 * d + 4) * (d / 2)) * (2 ** ((n + 1) / (d + 4) + d + 2)))
-print(f"R: {R}")
-sigma = R/math.sqrt(2*math.pi)
+# R = math.ceil(6 * T * math.sqrt((d + 5) * (2 * d + 4) * (d / 2)) * (2 ** ((n + 1) / (d + 4) + d + 2)))
+# print(f"R: {R}")
+# sigma = R/math.sqrt(2*math.pi)
 print(f"sigma: {sigma}")
 
 # 1) amplitudy Gaussa

@@ -54,6 +54,9 @@ class Regev(ABC):
         self.vectors = []
 
 
+    def draw_gaussian_probabilities(self):
+        return
+
     def draw_quantum_circuit(self, Ns, d_qd_list, decompose=False, gauss_init=False):
 
         for i in range(len(d_qd_list)):
@@ -76,15 +79,27 @@ class Regev(ABC):
 
                 circuit = self.construct_circuit(N, d_ceil_bool, qd_ceil_bool, gauss_init=gauss_init)
 
-                if decompose:
-                    filename = f'images/gauss/decomposed/{d_mode}_{qd_mode}/N_{N}.png'
-                    circuit.decompose().draw(output='mpl', filename=filename, style='iqp-dark', fold=-1)
-                    print(f"Created file: {filename}")
+                if gauss_init:
+                    directory = "gauss/"
                 else:
-                    filename = f'images/gauss/general/{d_mode}_{qd_mode}/N_{N}.png'
-                    circuit.draw(output='mpl', filename=filename, style='iqp-dark', fold=-1)
-                    print(f"Created file: {filename}")
+                    directory = "sandbox/"
 
+                if decompose:
+                    filename = f'images/{directory}decomposed/{d_mode}_{qd_mode}/N_{N}.png'
+                    circuit.decompose().draw(output='mpl', filename=filename, style='iqp-dark', fold=-1)
+                else:
+                    filename = f'images/{directory}general/{d_mode}_{qd_mode}/N_{N}.png'
+                    circuit.draw(output='mpl', filename=filename, style='iqp-dark', fold=-1)
+
+                # else:
+                #     if decompose:
+                #         filename = f'images/decomposed/{d_mode}_{qd_mode}/N_{N}.png'
+                #         circuit.decompose().draw(output='mpl', filename=filename, style='iqp-dark', fold=-1)
+                #     else:
+                #         filename = f'images/general/{d_mode}_{qd_mode}/N_{N}.png'
+                #         circuit.draw(output='mpl', filename=filename, style='iqp-dark', fold=-1)
+
+                print(f"Created file: {filename}")
 
     def run_all_algorithm(self, Ns, d_qd_list, number_of_combinations, type_of_test, find_pq=False, gauss_init=False):
         for i in range(len(d_qd_list)):
@@ -125,7 +140,14 @@ class Regev(ABC):
                                f"output_data: {quantum_result.output_data}\n"
                                f"\nvectors: {quantum_result}\n"
                                f"\nquantum part exec_time (ms): {quantum_result.quantum_exec_time}ms\n"
-                               f"quantum part exec_time: {convert_milliseconds(quantum_result.quantum_exec_time)}\n")
+                               f"quantum part exec_time: {convert_milliseconds(quantum_result.quantum_exec_time)}\n"
+                               f"\ngauss_R: {quantum_result.gauss_R}\n"
+                               f"gauss_mu: {quantum_result.gauss_mu}\n"
+                               f"gauss_sigma: {quantum_result.gauss_sigma}\n"
+                               f"\namps: {quantum_result.amps}\n\n"
+                               f"statevector: {quantum_result.state}\n"
+                               f"probabilities: {quantum_result.probs}\n"
+                               f"sum of probabilities: {quantum_result.probs_sum}\n")
 
                 result_str += (f"\n=============== CLASSICAL PART ===============\n"
                                f"R: {classic_result.R}\n"
@@ -322,7 +344,14 @@ class Regev(ABC):
                               f"output_data: {result.output_data}\n"
                               f"\nvectors: {vectors}\n"
                               f"\nexec_time (ms): {exec_time} ms\n"
-                              f"exec_time: {converted_time}")
+                              f"\nexec_time: {converted_time}\n"
+                              f"gauss_R: {result.gauss_R}\n"
+                              f"gauss_mu: {result.gauss_mu}\n"
+                              f"gauss_sigma: {result.gauss_sigma}\n"
+                              f"amps: {result.amps}\n\n"
+                              f"\nstatevector: {result.state}\n"
+                              f"probabilities: {result.probs}\n"
+                              f"sum of probabilities: {result.probs_sum}")
 
                 if d_ceil_bool:
                     d_mode = "ceil"
@@ -334,7 +363,12 @@ class Regev(ABC):
                 else:
                     qd_mode = "floor"
 
-                file = open(f"output_data/regev/quantum_part_output_reg_meas/{d_mode}_{qd_mode}/N_{N}", "w")
+                if gauss_init:
+                    directory = "gauss/"
+                else:
+                    directory = "regev2/"
+
+                file = open(f"output_data/{directory}quantum_part/{d_mode}_{qd_mode}/N_{N}", "w")
                 file.write(result_str)
                 file.close()
 
@@ -345,10 +379,20 @@ class Regev(ABC):
                 print(f"number_of_primes: {result.number_of_primes}")
                 print(f"exp_register_width: {result.exp_register_width}")
                 print(f"squared_primes: {result.squared_primes}")
+
                 print(f"output_data: {result.output_data}")
                 print(f"\nvectors: {vectors}\n")
                 print(f"exec_time: {exec_time}ms")
                 print(f"converted_time: {converted_time}")
+
+                print(f"gauss_R: {result.gauss_R}")
+                print(f"gauss_mu: {result.gauss_mu}")
+                print(f"gauss_sigma: {result.gauss_sigma}")
+                print(f"amps: {result.amps}")
+
+                print(f"statevector: {result.state}")
+                print(f"probabilities: {result.probs}")
+                print(f"sum of probabilities: {result.probs_sum}")
 
 
     def run_file_data_analyzer(self, Ns, d_qd_list, number_of_combinations, type_of_test_array=[1]):
@@ -585,8 +629,20 @@ class Regev(ABC):
 
         pm = transpile(circuit, aersim)
 
-        counts = aersim.run(pm, shots=self.shots).result().get_counts(0)
+        # counts = aersim.run(pm, shots=self.shots).result().get_counts(0)
+        results = aersim.run(pm, shots=self.shots).result()
 
+        # Gaussian probability amplitudes
+        # state = results.get_statevector(pm)
+        # probs = np.abs(np.array(state)) ** 2
+        # probs_sum = np.sum(probs)
+
+        # self.result.state = results.get_statevector(pm)
+        # self.result.probs = probs
+        # self.result.probs_sum = probs_sum
+
+        # Counts extraction
+        counts = results.get_counts(0)
 
         self.result.total_counts = len(counts)
         self.result.total_shots = self.shots
@@ -620,7 +676,10 @@ class Regev(ABC):
         return int(measurement, base=2)
 
 
-    def construct_circuit(self, N: int, d_ceil, qd_ceil, semi_classical: bool = False, measurement: bool = True, gauss_init: bool = False):
+    def construct_circuit(self, N: int, d_ceil, qd_ceil, semi_classical: bool = False, measurement: bool = True, gauss_init = False):
+
+        # Tutaj gauss_init jako [mu, sigma]
+
         self._validate_input(N)
 
         n = N.bit_length()
@@ -635,6 +694,39 @@ class Regev(ABC):
         else:
             qd = math.floor(n/d) + d
 
+        amps = False
+
+        # Jeżeli gauss_init = False, to nie jest tworzona superpozycja w rozkładzie Gaussa
+        # Jeżeli gauss_init = [False, False], to użyte są domyślne parametry
+        if gauss_init:
+            a = self.generate_a(d, N)
+
+            if isinstance(gauss_init[0], bool):
+                dim = 2 ** n
+                mu = (dim - 1) / 2.0
+            else:
+                mu = gauss_init[0]
+
+            print(f"=============== mu: {mu}")
+
+            if isinstance(gauss_init[1], bool):
+                R = calculate_R(d, qd, N, n, a)
+                sigma = R / math.sqrt(2 * math.pi)
+                self.result.gauss_R = R
+
+            else:
+                sigma = gauss_init[1]
+
+            amps = gaussian_amplitudes(qd, mu=mu, sigma=sigma)
+            print(f"=============== sigma: {sigma}")
+            print(f"=============== amps: {amps}")
+
+            self.result.gauss_mu = mu
+            self.result.gauss_sigma = sigma
+            self.result.amps = amps
+            self.result.probs = amps**2
+            self.result.probs_sum = amps**2
+
         self.result.N = N
         self.result.n = n
         self.result.d_ceil = d_ceil
@@ -642,8 +734,7 @@ class Regev(ABC):
         self.result.number_of_primes = d
         self.result.exp_register_width = qd
 
-
-        return self._construct_circuit(N, n, measurement, d, qd, gauss_init)
+        return self._construct_circuit(N, n, measurement, d, qd, amps)
 
 
     @staticmethod
@@ -654,7 +745,7 @@ class Regev(ABC):
         while ind < d:
             if is_prime(num):
                 if N % num == 0:
-                    print(f"We are very lucky! Here is p: {num} and q: {N//num}")
+                    # print(f"We are very lucky! Here is p: {num} and q: {N//num}")
                     num += 1
                     continue
                 a.append(int(math.pow(num, 2)))
@@ -670,11 +761,15 @@ class Regev(ABC):
             raise ValueError(f'The input N needs to be an odd integer greater than 1. Provided N = {N}.')
 
 
-    def _construct_circuit(self, N: int, n: int, measurement: bool, d: int, qd: int, gauss_init: bool) -> QuantumCircuit:
+    def _construct_circuit(self, N: int, n: int, measurement: bool, d: int, qd: int, amps) -> QuantumCircuit:
+
+        # Tutaj nie gauss_init, tylko już amps, żeby ta metoda zajmowała głównie budowaniem obwodu (oprócz "a")
 
         # Prepare params
         x_qregs_spec = dict()
         a = self.generate_a(d, N)
+        self.result.squared_primes = a
+        # a = self.result.squared_primes
 
 
         # Input registers, each has qd-qubits
@@ -689,26 +784,17 @@ class Regev(ABC):
         aux_qreg = AncillaRegister(self._get_aux_register_size(n), 'aux')
         circuit = QuantumCircuit(*x_qregs, y_qreg, aux_qreg, name=self._get_name(N, d))
 
-        if gauss_init:
+        if isinstance(amps, np.ndarray):
             # Initializing input register's qubits gaussian superposition
-            mu = 0
-            R = calculate_R(d, qd, N, n, a)
-            sigma = R/math.sqrt(2*math.pi)
-            amps = gaussian_amplitudes(qd, mu=mu, sigma=sigma)
-
             for qreg in x_qregs:
                 # circuit.initialize(amps, [j for j in range(st, en)])
                 circuit.initialize(amps, qreg)
-            pass
-
         else:
             # Initializing input register's qubits uniform superposition
             for qreg in x_qregs:
                 circuit.h(qreg)
 
         circuit.x(y_qreg[0])
-
-        self.result.squared_primes = a
 
         x_regs_cubits = []
         qregs_all = circuit.qregs
@@ -870,6 +956,15 @@ class RegevResult:
         self._p = 0
         self._q = 0
         self._classical_exec_time = 0
+
+        self._gauss_R = 0
+        self._gauss_mu = 0
+        self._gauss_sigma = 0
+        self._amps = []
+
+        self._state = []
+        self._probs = []
+        self._probs_sum = 0
 
 
     @property
@@ -1069,3 +1164,61 @@ class RegevResult:
         self._classical_exec_time = value
 
 
+
+    @property
+    def gauss_R(self) -> int:
+        return self._gauss_R
+
+    @gauss_R.setter
+    def gauss_R(self, value: int) -> None:
+        self._gauss_R = value
+
+    @property
+    def gauss_mu(self) -> int:
+        return self._gauss_mu
+
+    @gauss_mu.setter
+    def gauss_mu(self, value: int) -> None:
+        self._gauss_mu = value
+
+    @property
+    def gauss_sigma(self) -> int:
+        return self._gauss_sigma
+
+    @gauss_sigma.setter
+    def gauss_sigma(self, value: int) -> None:
+        self._gauss_sigma = value
+
+    @property
+    def amps(self) -> []:
+        return self._amps
+
+    @amps.setter
+    def amps(self, value: []) -> None:
+        self._amps = value
+
+
+
+    @property
+    def state(self) -> []:
+        return self._state
+
+    @state.setter
+    def state(self, value: []) -> None:
+        self._state = value
+
+    @property
+    def probs(self) -> []:
+        return self._probs
+
+    @probs.setter
+    def probs(self, value: []) -> None:
+        self._probs = value
+
+    @property
+    def probs_sum(self) -> int:
+        return self._probs_sum
+
+    @probs_sum.setter
+    def probs_sum(self, value: int) -> None:
+        self._probs_sum = value

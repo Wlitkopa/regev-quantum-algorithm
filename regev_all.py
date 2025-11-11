@@ -8,6 +8,9 @@ from implementations.r_haner import HanerRegev as Regev
 # Ns = [15, 21, 33, 35, 39, 51, 55, 57, 65, 69, 77, 85, 91, 95, 119, 143]
 # d_qd_list = [[True, True], [True, False], [False, True], [False, False]]
 # type_of_test_array = [1, 2, 3]
+# gauss_init = [False, False]  # Sets default values for mu and sigma
+# gauss_init = False           # Disables gaussian superposition
+# gauss_init = [0, False]      # Sets mu = 0 and sigma is default
 
 
 # Initiating Regev algorithm class
@@ -15,10 +18,10 @@ shots_num = 128
 regev = Regev(shots_num)
 
 # Numbers N (for running 'all parts', 'quantum part', 'classical part' and 'drawing quantum circuit')
-Ns = [21]
+Ns = [15]
 
 # d and qd parameters combination (for running 'all parts', 'quantum part', 'classical part' and 'drawing quantum circuit')
-d_qd_list = [[True, True], [False, False]]
+d_qd_list = [[False, False]]
 
 # Number of combinations of picking up output vectors to create lattice (for running 'all parts', 'classical part')
 number_of_combinations = 100
@@ -36,7 +39,12 @@ find_pq = True
 decompose = False
 
 # Parameter initiating initial superposition in gaussian distribution
-gauss_init = True
+# gauss_init = False
+# gauss_init = [0, False]
+gauss_init = [False, 2**(Ns[0].bit_length() - 3)]
+# gauss_init = [False, False]
+# gauss_init = [0, 11]
+
 
 
 while True:
