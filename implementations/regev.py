@@ -28,11 +28,16 @@ import time
 # from utils.secrets import ibm_api_token
 
 import os
+from pathlib import Path
 import ast
 import math
 import olll
 import itertools
 import numpy as np
+
+from scipy.interpolate import make_interp_spline
+import matplotlib.pyplot as plt
+
 
 from qiskit.providers import  Backend
 from qiskit_aer import AerSimulator
@@ -54,11 +59,92 @@ class Regev(ABC):
         self.vectors = []
 
 
-    def draw_gaussian_probabilities(self):
-        return
+    def draw_gaussian_probabilities(self, path):
+        print("=========== DRAW GAUSSIAN ============")
+        print(f"self.result.amps: {self.result.amps}")
+        print(f"self.result.d: {self.result.number_of_primes}")
+        print(f"self.result.qd: {self.result.exp_register_width}")
+        print(f"self.result.N: {self.result.N}")
+        result_files = ""
+        result_data = ""
+
+        amps = self.result.amps
+        d = self.result.number_of_primes
+        qd = self.result.exp_register_width
+        n = self.result.n
+        N = self.result.N
+        mu = self.result.gauss_mu
+        R = self.result.gauss_R
+        sigma = self.result.gauss_sigma
+
+
+
+        n_qubits = qd
+        dim = 2 ** n_qubits
+
+        x = np.arange(dim, dtype=float)
+        y = list(amps)
+        print(f"\ny: {y}\n")
+
+        result_data += (f"d: {d}\n"
+                        f"qd: {qd}\n"
+                        f"N: {N}\n\n"
+                        f"mu: {mu}\n"
+                        f"R: {R}\n"
+                        f"sigma: {sigma}\n"
+                        f"probability amplitudes:\n{y}")
+
+        # directory = Path(f"{path}/N_{N}")
+        # directory.mkdir(parents=True, exist_ok=True)
+
+        file = f"{path}/line_points.png"
+        plt.figure(figsize=(8, 4))
+        plt.plot(x, y, marker='o')
+        plt.title("Initial qubits probability amplitudes - 1 dimension")
+        plt.xlabel("Input registry value")
+        plt.ylabel("Probability amplitude")
+        plt.grid(True)
+        plt.savefig(file)
+        # plt.show()
+        result_files += f" - {file}\n"
+
+        file = f"{path}/diagram.png"
+        plt.figure(figsize=(8, 4))
+        plt.bar(x, y, width=0.8)
+        plt.title("Initial qubits probability amplitudes - 1 dimension")
+        plt.xlabel("Input registry value")
+        plt.ylabel("Probability amplitude")
+        plt.savefig(file)
+        # plt.show()
+        result_files += f" - {file}\n"
+
+        xs = np.linspace(x.min(), x.max(), 500)
+        spline = make_interp_spline(x, y, k=3)
+        ys = spline(xs)
+
+        file = f"{path}/line_points_cont.png"
+        plt.figure(figsize=(8, 4))
+        plt.plot(xs, ys)
+        plt.scatter(x, y, color="black", s=20)
+        plt.title("Initial qubits probability amplitudes - 1 dimension")
+        plt.xlabel("Input registry value")
+        plt.ylabel("Probability amplitude")
+        plt.grid()
+        plt.savefig(file)
+        # plt.show()
+        result_files += f" - {file}\n"
+
+        data_file = f"{path}/gauss_data"
+        file = open(data_file, "w")
+        file.write(result_data)
+        file.close()
+        result_files += f" - {data_file}\n"
+
+        return result_files
 
     def draw_quantum_circuit(self, Ns, d_qd_list, decompose=False, gauss_init=False):
 
+        result_files = ""
         for i in range(len(d_qd_list)):
             d_ceil_bool = d_qd_list[i][0]
             qd_ceil_bool = d_qd_list[i][1]
@@ -80,16 +166,27 @@ class Regev(ABC):
                 circuit = self.construct_circuit(N, d_ceil_bool, qd_ceil_bool, gauss_init=gauss_init)
 
                 if gauss_init:
-                    directory = "gauss/"
+                    path_general = f"images/gauss/quantum_part/general/{d_mode}_{qd_mode}/{self.result.gauss_mu}_{self.result.gauss_sigma}/N_{N}"
+                    path_decomposed = f"images/gauss/quantum_part/decomposed/{d_mode}_{qd_mode}/{self.result.gauss_mu}_{self.result.gauss_sigma}/N_{N}"
                 else:
-                    directory = "sandbox/"
+                    path_general = f"images/regev2/quantum_part/general/{d_mode}_{qd_mode}"
+                    path_decomposed = f"images/regev2/quantum_part/decomposed/{d_mode}_{qd_mode}"
 
                 if decompose:
-                    filename = f'images/{directory}decomposed/{d_mode}_{qd_mode}/N_{N}.png'
+                    directory_decomposed = Path(path_decomposed)
+                    directory_decomposed.mkdir(parents=True, exist_ok=True)
+                    filename = f'{path_decomposed}/N_{N}.png'
+                    path = path_decomposed
                     circuit.decompose().draw(output='mpl', filename=filename, style='iqp-dark', fold=-1)
                 else:
-                    filename = f'images/{directory}general/{d_mode}_{qd_mode}/N_{N}.png'
+                    directory_general = Path(path_general)
+                    directory_general.mkdir(parents=True, exist_ok=True)
+                    filename = f'{path_general}/N_{N}.png'
+                    path = path_general
                     circuit.draw(output='mpl', filename=filename, style='iqp-dark', fold=-1)
+
+                if gauss_init:
+                    result_files = self.draw_gaussian_probabilities(path)
 
                 # else:
                 #     if decompose:
@@ -98,8 +195,9 @@ class Regev(ABC):
                 #     else:
                 #         filename = f'images/general/{d_mode}_{qd_mode}/N_{N}.png'
                 #         circuit.draw(output='mpl', filename=filename, style='iqp-dark', fold=-1)
+                result_files += f" - {filename}"
+                print(f"Created files:\n{result_files}")
 
-                print(f"Created file: {filename}")
 
     def run_all_algorithm(self, Ns, d_qd_list, number_of_combinations, type_of_test, find_pq=False, gauss_init=False):
         for i in range(len(d_qd_list)):
@@ -141,7 +239,9 @@ class Regev(ABC):
                                f"\nvectors: {quantum_result}\n"
                                f"\nquantum part exec_time (ms): {quantum_result.quantum_exec_time}ms\n"
                                f"quantum part exec_time: {convert_milliseconds(quantum_result.quantum_exec_time)}\n"
-                               f"\ngauss_R: {quantum_result.gauss_R}\n"
+                               f"\ngauss_init_mu: {quantum_result.gauss_init_mu}\n"
+                               f"gauss_init_sigma: {quantum_result.gauss_init_sigma}"
+                               f"gauss_R: {quantum_result.gauss_R}\n"
                                f"gauss_mu: {quantum_result.gauss_mu}\n"
                                f"gauss_sigma: {quantum_result.gauss_sigma}\n"
                                f"\namps: {quantum_result.amps}\n\n"
@@ -170,7 +270,17 @@ class Regev(ABC):
                 result_str += (f"total exec_time (ms): {exec_time}ms\n"
                               f"total exec_time: {converted_time}")
 
-                file = open(f"output_data/regev/all_parts/{d_mode}_{qd_mode}/N_{N}", "w")
+
+                if gauss_init:
+                    path = f"output_data/gauss/all_parts/quantum_part/{d_mode}_{qd_mode}/{quantum_result.gauss_mu}_{quantum_result.gauss_sigma}"
+                else:
+                    path = f"output_data/regev2/all_parts/quantum_part/{d_mode}_{qd_mode}"
+
+                directory = Path(path)
+                directory.mkdir(parents=True, exist_ok=True)
+
+                file = open(f"{path}/N_{N}", "w")
+
                 file.write(result_str)
                 file.close()
 
@@ -345,6 +455,8 @@ class Regev(ABC):
                               f"\nvectors: {vectors}\n"
                               f"\nexec_time (ms): {exec_time} ms\n"
                               f"\nexec_time: {converted_time}\n"
+                              f"gauss_init_mu: {result.gauss_init_mu}\n"
+                              f"gauss_init_sigma: {result.gauss_init_sigma}\n"
                               f"gauss_R: {result.gauss_R}\n"
                               f"gauss_mu: {result.gauss_mu}\n"
                               f"gauss_sigma: {result.gauss_sigma}\n"
@@ -364,11 +476,14 @@ class Regev(ABC):
                     qd_mode = "floor"
 
                 if gauss_init:
-                    directory = "gauss/"
+                    path = f"output_data/gauss/quantum_part/{d_mode}_{qd_mode}/{result.gauss_mu}_{result.gauss_sigma}"
                 else:
-                    directory = "regev2/"
+                    path = f"output_data/regev2/quantum_part/{d_mode}_{qd_mode}"
 
-                file = open(f"output_data/{directory}quantum_part/{d_mode}_{qd_mode}/N_{N}", "w")
+                directory = Path(path)
+                directory.mkdir(parents=True, exist_ok=True)
+
+                file = open(f"{path}/N_{N}", "w")
                 file.write(result_str)
                 file.close()
 
@@ -385,6 +500,8 @@ class Regev(ABC):
                 print(f"exec_time: {exec_time}ms")
                 print(f"converted_time: {converted_time}")
 
+                print(f"gauss_init_mu: {result.gauss_init_mu}")
+                print(f"gauss_init_sigma: {result.gauss_init_sigma}")
                 print(f"gauss_R: {result.gauss_R}")
                 print(f"gauss_mu: {result.gauss_mu}")
                 print(f"gauss_sigma: {result.gauss_sigma}")
@@ -720,7 +837,12 @@ class Regev(ABC):
             amps = gaussian_amplitudes(qd, mu=mu, sigma=sigma)
             print(f"=============== sigma: {sigma}")
             print(f"=============== amps: {amps}")
+            print(f"=============== amps**2: {amps**2}")
+            print(f"=============== sum(amps**2): {sum(amps**2)}")
 
+
+            self.result.gauss_init_mu = gauss_init[0]
+            self.result.gauss_init_sigma = gauss_init[1]
             self.result.gauss_mu = mu
             self.result.gauss_sigma = sigma
             self.result.amps = amps
@@ -957,6 +1079,8 @@ class RegevResult:
         self._q = 0
         self._classical_exec_time = 0
 
+        self._gauss_init_mu = 0
+        self._gauss_init_sigma = 0
         self._gauss_R = 0
         self._gauss_mu = 0
         self._gauss_sigma = 0
@@ -1164,6 +1288,21 @@ class RegevResult:
         self._classical_exec_time = value
 
 
+    @property
+    def gauss_init_mu(self):
+        return self._gauss_init_mu
+
+    @gauss_init_mu.setter
+    def gauss_init_mu(self, value) -> None:
+        self._gauss_init_mu = value
+
+    @property
+    def gauss_init_sigma(self):
+        return self._gauss_init_sigma
+
+    @gauss_init_sigma.setter
+    def gauss_init_sigma(self, value) -> None:
+        self._gauss_init_sigma = value
 
     @property
     def gauss_R(self) -> int:
