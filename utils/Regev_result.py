@@ -44,6 +44,7 @@ class RegevResult:
         self._probs_sum = 0
 
         self._measure_output_register = False
+        self._output_data_original = []
 
 
     @property
@@ -325,3 +326,11 @@ class RegevResult:
     @measure_output_register.setter
     def measure_output_register(self, value: bool) -> None:
         self._measure_output_register = value
+
+    @property
+    def output_data_original(self) -> []:
+        return self._output_data_original
+
+    @output_data_original.setter
+    def output_data_original(self, value: []) -> None:
+        self._output_data_original = value

@@ -772,16 +772,35 @@ class Regev(ABC):
 
         sorted_counts_items = sorted(counts.items(), key=lambda x: x[1])
 
-        for measurement, shots in sorted_counts_items:
-            vector = convert_measurement(measurement)
-            self.result.output_data.append([vector, measurement, shots])
 
-            # The following two lines might be useless
-            self.vectors.append(vector)
-            self.result.vectors.append(vector)
+        if measure_output_register:
+            print("============== with measuring output register ==============")
+            for measurement, shots in sorted_counts_items:
+                vector = convert_measurement(measurement)
+                for item in self.result.output_data:
+                    if item[0] == vector[:-1]:
+                        item[2] += shots
+                        break
+                else:
+                    input_registers = ' '.join(measurement.split()[:-1])
+                    self.result.output_data.append([vector[:-1], input_registers, shots])
 
-            self.result.successful_counts += 1
-            self.result.successful_shots += shots
+                self.result.output_data_original.append([vector, measurement, shots])
+
+                self.result.successful_counts += 1
+                self.result.successful_shots += shots
+
+        else:
+            for measurement, shots in sorted_counts_items:
+                vector = convert_measurement(measurement)
+                self.result.output_data.append([vector, measurement, shots])
+
+                # The following two lines might be useless
+                self.vectors.append(vector)
+                self.result.vectors.append(vector)
+
+                self.result.successful_counts += 1
+                self.result.successful_shots += shots
 
         end = time.time()
         exec_time = (end - start) * (10 ** 3)
@@ -830,7 +849,7 @@ class Regev(ABC):
             else:
                 mu = gauss_init[0]
 
-            print(f"=============== mu: {mu}")
+            # print(f"=============== mu: {mu}")
 
             if isinstance(gauss_init[1], bool):
                 R = calculate_R(d, qd, N, n, a)
@@ -841,10 +860,10 @@ class Regev(ABC):
                 sigma = gauss_init[1]
 
             amps = gaussian_amplitudes(qd, mu=mu, sigma=sigma)
-            print(f"=============== sigma: {sigma}")
-            print(f"=============== amps: {amps}")
-            print(f"=============== amps**2: {amps**2}")
-            print(f"=============== sum(amps**2): {sum(amps**2)}")
+            # print(f"=============== sigma: {sigma}")
+            # print(f"=============== amps: {amps}")
+            # print(f"=============== amps**2: {amps**2}")
+            # print(f"=============== sum(amps**2): {sum(amps**2)}")
 
 
             self.result.gauss_init_mu = gauss_init[0]
