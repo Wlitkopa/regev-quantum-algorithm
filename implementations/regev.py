@@ -10,6 +10,7 @@ from qiskit.circuit import Instruction
 from qiskit.circuit.library import QFT
 from qiskit.visualization.circuit import matplotlib
 
+from utils.Regev_result import RegevResult
 from utils.circuit_creation import create_circuit
 from utils.is_prime import is_prime
 from utils.convert_measurement import convert_measurement
@@ -17,6 +18,7 @@ from utils.convert_to_matrix_row import convert_to_matrix_row
 from utils.convert_milliseconds import convert_milliseconds
 from utils.calculate_R import calculate_R
 from utils.gaussian_amplitudes import gaussian_amplitudes
+
 
 import logging
 import math
@@ -142,7 +144,8 @@ class Regev(ABC):
 
         return result_files
 
-    def draw_quantum_circuit(self, Ns, d_qd_list, decompose=False, gauss_init=False):
+
+    def draw_quantum_circuit(self, Ns, d_qd_list, decompose=False, gauss_init=False, measure_output_register=False):
 
         result_files = ""
         for i in range(len(d_qd_list)):
@@ -163,7 +166,7 @@ class Regev(ABC):
                 else:
                     qd_mode = "floor"
 
-                circuit = self.construct_circuit(N, d_ceil_bool, qd_ceil_bool, gauss_init=gauss_init)
+                circuit = self.construct_circuit(N, d_ceil_bool, qd_ceil_bool, gauss_init=gauss_init, measure_output_register=measure_output_register)
 
                 if gauss_init:
                     path_general = f"images/gauss/quantum_part/general/{d_mode}_{qd_mode}/{self.result.gauss_mu}_{self.result.gauss_sigma}/N_{N}"
@@ -195,11 +198,12 @@ class Regev(ABC):
                 #     else:
                 #         filename = f'images/general/{d_mode}_{qd_mode}/N_{N}.png'
                 #         circuit.draw(output='mpl', filename=filename, style='iqp-dark', fold=-1)
+
                 result_files += f" - {filename}"
                 print(f"Created files:\n{result_files}")
 
 
-    def run_all_algorithm(self, Ns, d_qd_list, number_of_combinations, type_of_test, find_pq=False, gauss_init=False):
+    def run_all_algorithm(self, Ns, d_qd_list, number_of_combinations, type_of_test, find_pq=False, gauss_init=False, measure_output_register=False):
         for i in range(len(d_qd_list)):
             d_ceil_bool = d_qd_list[i][0]
             qd_ceil_bool = d_qd_list[i][1]
@@ -221,7 +225,7 @@ class Regev(ABC):
 
                 print(f"\nN: {N}")
                 start = time.time()
-                quantum_result = self.get_vectors(N, d_ceil=d_ceil_bool, qd_ceil=qd_ceil_bool, semi_classical=False, gauss_init=gauss_init)
+                quantum_result = self.get_vectors(N, d_ceil=d_ceil_bool, qd_ceil=qd_ceil_bool, semi_classical=False, gauss_init=gauss_init, measure_output_register=measure_output_register)
                 classic_result = self.run_classical_part(number_of_combinations, N, quantum_result.n, quantum_result.number_of_primes, quantum_result.exp_register_width, quantum_result.squared_primes, quantum_result.output_data, type_of_test, find_pq)
                 end = time.time()
                 exec_time = (end - start) * 1000
@@ -239,6 +243,7 @@ class Regev(ABC):
                                f"\nvectors: {quantum_result}\n"
                                f"\nquantum part exec_time (ms): {quantum_result.quantum_exec_time}ms\n"
                                f"quantum part exec_time: {convert_milliseconds(quantum_result.quantum_exec_time)}\n"
+                               f"\noutput register measured: {quantum_result.measure_output_register}\n"
                                f"\ngauss_init_mu: {quantum_result.gauss_init_mu}\n"
                                f"gauss_init_sigma: {quantum_result.gauss_init_sigma}"
                                f"gauss_R: {quantum_result.gauss_R}\n"
@@ -425,7 +430,7 @@ class Regev(ABC):
         return classic_result
 
 
-    def run_quantum_part_data_collection(self, Ns, d_qd_list, gauss_init):
+    def run_quantum_part_data_collection(self, Ns, d_qd_list, gauss_init, measure_output_register=False):
 
         for i in range(len(d_qd_list)):
             d_ceil_bool = d_qd_list[i][0]
@@ -437,7 +442,7 @@ class Regev(ABC):
                 print(f"\nN: {N}")
 
                 start = time.time()
-                result = self.get_vectors(N, d_ceil=d_ceil_bool, qd_ceil=qd_ceil_bool, semi_classical=False, gauss_init=gauss_init)
+                result = self.get_vectors(N, d_ceil=d_ceil_bool, qd_ceil=qd_ceil_bool, semi_classical=False, gauss_init=gauss_init, measure_output_register=measure_output_register)
                 end = time.time()
                 exec_time = (end - start) * (10 ** 3)
                 converted_time = convert_milliseconds(exec_time)
@@ -455,7 +460,8 @@ class Regev(ABC):
                               f"\nvectors: {vectors}\n"
                               f"\nexec_time (ms): {exec_time} ms\n"
                               f"\nexec_time: {converted_time}\n"
-                              f"gauss_init_mu: {result.gauss_init_mu}\n"
+                              f"\noutput register masured: {result.measure_output_register}\n"
+                              f"\ngauss_init_mu: {result.gauss_init_mu}\n"
                               f"gauss_init_sigma: {result.gauss_init_sigma}\n"
                               f"gauss_R: {result.gauss_R}\n"
                               f"gauss_mu: {result.gauss_mu}\n"
@@ -730,14 +736,14 @@ class Regev(ABC):
                         self.get_factors(vector, a_root, N)
 
 
-    def get_vectors(self, N: int, d_ceil=False, qd_ceil=False, semi_classical=False, gauss_init=False) -> 'RegevResult':
+    def get_vectors(self, N: int, d_ceil=False, qd_ceil=False, semi_classical=False, gauss_init=False, measure_output_register=False) -> 'RegevResult':
 
         print("Running quantum part")
 
         start = time.time()
         self._validate_input(N)
 
-        circuit = self.construct_circuit(N, d_ceil, qd_ceil, semi_classical, measurement=True, gauss_init=gauss_init)
+        circuit = self.construct_circuit(N, d_ceil, qd_ceil, semi_classical, measurement=True, gauss_init=gauss_init, measure_output_register=measure_output_register)
         # aersim = AerSimulator(method="extended_stabilizer")
         aersim = AerSimulator()
 
@@ -793,7 +799,7 @@ class Regev(ABC):
         return int(measurement, base=2)
 
 
-    def construct_circuit(self, N: int, d_ceil, qd_ceil, semi_classical: bool = False, measurement: bool = True, gauss_init = False):
+    def construct_circuit(self, N: int, d_ceil, qd_ceil, semi_classical: bool = False, measurement: bool = True, gauss_init = False, measure_output_register: bool = False):
 
         # Tutaj gauss_init jako [mu, sigma]
 
@@ -855,8 +861,9 @@ class Regev(ABC):
         self.result.qd_ceil = qd_ceil
         self.result.number_of_primes = d
         self.result.exp_register_width = qd
+        self.result.measure_output_register = measure_output_register
 
-        return self._construct_circuit(N, n, measurement, d, qd, amps)
+        return self._construct_circuit(N, n, measurement, d, qd, amps, measure_output_register)
 
 
     @staticmethod
@@ -883,7 +890,7 @@ class Regev(ABC):
             raise ValueError(f'The input N needs to be an odd integer greater than 1. Provided N = {N}.')
 
 
-    def _construct_circuit(self, N: int, n: int, measurement: bool, d: int, qd: int, amps) -> QuantumCircuit:
+    def _construct_circuit(self, N: int, n: int, measurement: bool, d: int, qd: int, amps, measure_output_register: bool) -> QuantumCircuit:
 
         # Tutaj nie gauss_init, tylko już amps, żeby ta metoda zajmowała głównie budowaniem obwodu (oprócz "a")
 
@@ -933,11 +940,11 @@ class Regev(ABC):
                 qubits_to_pass
             )
 
-
         # Output register measuring
-        # y_creg = ClassicalRegister(n, 'yValue')
-        # circuit.add_register(y_creg)
-        # circuit.measure(qregs_all[-2], y_creg)
+        if measure_output_register:
+            y_creg = ClassicalRegister(n, 'yValue')
+            circuit.add_register(y_creg)
+            circuit.measure(qregs_all[-2], y_creg)
 
         qft = QFT(qd).to_gate()
 
@@ -1046,318 +1053,3 @@ class Regev(ABC):
     def _modular_multiplication_gate(self, constant: int, N: int, n: int) -> Instruction:
         raise NotImplemented
 
-
-
-
-class RegevResult:
-
-    def __init__(self) -> None:
-        self._order = None
-        self._total_counts = 0
-        self._successful_counts = 0
-        self._total_shots = 0
-        self._successful_shots = 0
-
-        self._N = 0
-        self._n = 0
-        self._d_ceil = False
-        self._qd_ceil = False
-        self._number_of_primes = 0
-        self._exp_register_width = 0
-        self._squared_primes = []
-        self._output_data = []
-        self._vectors = []
-        self._quantum_exec_time = 0
-
-        self._R = 0
-        self._T = 0
-        self._t = 0
-        self._delta = 0
-        self._delta_inv = 0
-        self._vector = 0
-        self._p = 0
-        self._q = 0
-        self._classical_exec_time = 0
-
-        self._gauss_init_mu = 0
-        self._gauss_init_sigma = 0
-        self._gauss_R = 0
-        self._gauss_mu = 0
-        self._gauss_sigma = 0
-        self._amps = []
-
-        self._state = []
-        self._probs = []
-        self._probs_sum = 0
-
-
-    @property
-    def order(self) -> Optional[int]:
-        return self._order
-
-    @order.setter
-    def order(self, value: int) -> None:
-        self._order = value
-
-    @property
-    def total_counts(self) -> int:
-        return self._total_counts
-
-    @total_counts.setter
-    def total_counts(self, value: int) -> None:
-        self._total_counts = value
-
-    @property
-    def successful_counts(self) -> int:
-        return self._successful_counts
-
-    @successful_counts.setter
-    def successful_counts(self, value: int) -> None:
-        self._successful_counts = value
-
-    @property
-    def total_shots(self) -> int:
-        return self._total_shots
-
-    @total_shots.setter
-    def total_shots(self, value: int) -> None:
-        self._total_shots = value
-
-    @property
-    def successful_shots(self) -> int:
-        return self._successful_shots
-
-    @successful_shots.setter
-    def successful_shots(self, value: int) -> None:
-        self._successful_shots = value
-
-
-
-    @property
-    def N(self) -> int:
-        return self._N
-
-    @N.setter
-    def N(self, value: int) -> None:
-        self._N = value
-
-    @property
-    def n(self) -> int:
-        return self._n
-
-    @n.setter
-    def n(self, value: int) -> None:
-        self._n = value
-
-    @property
-    def d_ceil(self) -> bool:
-        return self._d_ceil
-
-    @d_ceil.setter
-    def d_ceil(self, value: bool) -> None:
-        self._d_ceil = value
-
-    @property
-    def qd_ceil(self) -> bool:
-        return self._qd_ceil
-
-    @qd_ceil.setter
-    def qd_ceil(self, value: bool) -> None:
-        self._qd_ceil = value
-
-    @property
-    def number_of_primes(self) -> int:
-        return self._number_of_primes
-
-    @number_of_primes.setter
-    def number_of_primes(self, value: int) -> None:
-        self._number_of_primes = value
-
-    @property
-    def exp_register_width(self) -> int:
-        return self._exp_register_width
-
-    @exp_register_width.setter
-    def exp_register_width(self, value: int) -> None:
-        self._exp_register_width = value
-
-    @property
-    def squared_primes(self) -> []:
-        return self._squared_primes
-
-    @squared_primes.setter
-    def squared_primes(self, value: []) -> None:
-        self._squared_primes = value
-
-    @property
-    def output_data(self) -> []:
-        return self._output_data
-
-    @output_data.setter
-    def output_data(self, value: []) -> None:
-        self._output_data = value
-
-    @property
-    def vectors(self) -> []:
-        return self._vectors
-
-    @vectors.setter
-    def vectors(self, value: []) -> None:
-        self._vectors = value
-
-    @property
-    def quantum_exec_time(self) -> int:
-        return self._quantum_exec_time
-
-    @quantum_exec_time.setter
-    def quantum_exec_time(self, value: int) -> None:
-        self._quantum_exec_time = value
-
-
-
-    @property
-    def R(self) -> int:
-        return self._R
-
-    @R.setter
-    def R(self, value: int) -> None:
-        self._R = value
-
-    @property
-    def T(self) -> int:
-        return self._T
-
-    @T.setter
-    def T(self, value: int) -> None:
-        self._T = value
-
-    @property
-    def t(self) -> int:
-        return self._t
-
-    @t.setter
-    def t(self, value: int) -> None:
-        self._t = value
-
-    @property
-    def delta(self) -> int:
-        return self._delta
-
-    @delta.setter
-    def delta(self, value: int) -> None:
-        self._delta = value
-
-    @property
-    def delta_inv(self) -> int:
-        return self._delta_inv
-
-    @delta_inv.setter
-    def delta_inv(self, value: int) -> None:
-        self._delta_inv = value
-
-    @property
-    def vector(self) -> []:
-        return self._vector
-
-    @vector.setter
-    def vector(self, value: []) -> None:
-        self._vector = value
-
-    @property
-    def p(self) -> int:
-        return self._p
-
-    @p.setter
-    def p(self, value: int) -> None:
-        self._p = value
-
-    @property
-    def q(self) -> int:
-        return self._q
-
-    @q.setter
-    def q(self, value: int) -> None:
-        self._q = value
-
-    @property
-    def classical_exec_time(self) -> int:
-        return self._classical_exec_time
-
-    @classical_exec_time.setter
-    def classical_exec_time(self, value: int) -> None:
-        self._classical_exec_time = value
-
-
-    @property
-    def gauss_init_mu(self):
-        return self._gauss_init_mu
-
-    @gauss_init_mu.setter
-    def gauss_init_mu(self, value) -> None:
-        self._gauss_init_mu = value
-
-    @property
-    def gauss_init_sigma(self):
-        return self._gauss_init_sigma
-
-    @gauss_init_sigma.setter
-    def gauss_init_sigma(self, value) -> None:
-        self._gauss_init_sigma = value
-
-    @property
-    def gauss_R(self) -> int:
-        return self._gauss_R
-
-    @gauss_R.setter
-    def gauss_R(self, value: int) -> None:
-        self._gauss_R = value
-
-    @property
-    def gauss_mu(self) -> int:
-        return self._gauss_mu
-
-    @gauss_mu.setter
-    def gauss_mu(self, value: int) -> None:
-        self._gauss_mu = value
-
-    @property
-    def gauss_sigma(self) -> int:
-        return self._gauss_sigma
-
-    @gauss_sigma.setter
-    def gauss_sigma(self, value: int) -> None:
-        self._gauss_sigma = value
-
-    @property
-    def amps(self) -> []:
-        return self._amps
-
-    @amps.setter
-    def amps(self, value: []) -> None:
-        self._amps = value
-
-
-
-    @property
-    def state(self) -> []:
-        return self._state
-
-    @state.setter
-    def state(self, value: []) -> None:
-        self._state = value
-
-    @property
-    def probs(self) -> []:
-        return self._probs
-
-    @probs.setter
-    def probs(self, value: []) -> None:
-        self._probs = value
-
-    @property
-    def probs_sum(self) -> int:
-        return self._probs_sum
-
-    @probs_sum.setter
-    def probs_sum(self, value: int) -> None:
-        self._probs_sum = value

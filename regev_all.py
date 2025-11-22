@@ -19,13 +19,16 @@ regev = Regev(shots_num)
 
 # Numbers N (for running 'all parts', 'quantum part', 'classical part' and 'drawing quantum circuit')
 # Ns = [15, 21, 33]
-# Ns = [15]
-Ns = [15, 21, 33, 35, 39, 51, 55, 57, 65, 69, 77, 85, 91, 95, 119, 143]
+Ns = [15]
+# Ns = [15, 21, 33, 35, 39, 51, 55, 57, 65, 69, 77, 85, 91, 95, 119, 143]
+# Ns = [85, 91, 95, 119, 143]
+
 
 # d and qd parameters combination (for running 'all parts', 'quantum part', 'classical part' and 'drawing quantum circuit')
+# d_qd_list = [[False, True], [False, False]]
 # d_qd_list = [[True, True], [False, False]]
-# d_qd_list = [[False, False]]
 d_qd_list = [[False, False]]
+# d_qd_list = [[True, False]]
 
 # Number of combinations of picking up output vectors to create lattice (for running 'all parts', 'classical part')
 number_of_combinations = 100
@@ -48,6 +51,9 @@ gauss_init = [0, False]
 # gauss_init = [False, 2**(Ns[0].bit_length() - 3)]
 # gauss_init = [False, False]
 # gauss_init = [0, 11]
+
+# Output registry measuring
+measure_output_register = True
 
 
 
@@ -72,13 +78,13 @@ while True:
     match choice:
         case 1:
             print("------- Running all algorithm -------")
-            regev.run_all_algorithm(Ns, d_qd_list, number_of_combinations, type_of_test, find_pq, gauss_init)
+            regev.run_all_algorithm(Ns, d_qd_list, number_of_combinations, type_of_test, find_pq, gauss_init, measure_output_register)
             print("Finished running all algorithm. The results are saved in output_data/regev/all_parts folder")
             continue
 
         case 2:
             print("------- Running quantum part -------")
-            regev.run_quantum_part_data_collection(Ns, d_qd_list, gauss_init)
+            regev.run_quantum_part_data_collection(Ns, d_qd_list, gauss_init, measure_output_register)
             print("Finished running quantum part. The results are saved in output_data/regev/quantum_part folder")
             continue
 
@@ -90,7 +96,7 @@ while True:
 
         case 4:
             print("------- Drawing quantum circuit -------")
-            regev.draw_quantum_circuit(Ns, d_qd_list, decompose, gauss_init)
+            regev.draw_quantum_circuit(Ns, d_qd_list, decompose, gauss_init, measure_output_register)
             print("Finished running drawing quantum circuit")
             continue
 
