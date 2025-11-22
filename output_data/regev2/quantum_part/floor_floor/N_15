@@ -1,0 +1,27 @@
+N: 15
+n: 4
+d_ceil: False
+qd_ceil: False
+number_of_primes (d): 2
+exp_register_width (qd): 4
+squared_primes: [4, 49]
+output_data: [[[8, 8], '1000 1000', 64], [[0, 0], '0000 0000', 64]]
+
+vectors: 
+vector with 64 shots: [8, 8],
+vector with 64 shots: [0, 0],
+
+exec_time (ms): 7931.945323944092 ms
+
+exec_time: 7s 931.9453239440918ms
+gauss_init_mu: 0
+gauss_init_sigma: 0
+gauss_R: 0
+gauss_mu: 0
+gauss_sigma: 0
+amps: []
+
+
+statevector: []
+probabilities: []
+sum of probabilities: 0

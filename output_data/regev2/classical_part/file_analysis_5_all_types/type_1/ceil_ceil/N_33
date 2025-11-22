@@ -1,0 +1,16 @@
+N: 33
+n: 6
+number_of_primes (d): 3
+exp_register_width (qd): 5
+primes: [2, 5, 7]
+
+R: 12620
+T: 3
+t: 5
+delta: 9.704792958728914e-05
+delta_inv: 10305Percent of combinations (with positive values of result vector) that gives % N = 1: 64.0%
+Percent of combinations (with positive values of result vector) that give p and q: 44.0%
+Vectors that gives p and q: [[0, 0, -5], [1, -2, 1], [-4, -2, 1], [0, 0, -5], [-7, 5, -4], [16, -11, 14], [1, -2, 1], [1, -2, 1], [1, -2, 1], [-2, 4, 3], [1, -2, 1], [0, 0, -5], [-1, 2, -1], [-4, 2, -7], [1, -2, 1], [1, -2, 1], [0, 0, 5], [0, 0, 15], [3, -11, -2], [-10, 9, -8], [11, 13, 16], [2, 1, 2]]
+
+exec_time (ms): 59898.65827560425 ms
+exec_time: 59s 898.658275604248ms
