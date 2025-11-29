@@ -20,7 +20,7 @@ regev = Regev(shots_num)
 # Numbers N (for running 'all parts', 'quantum part', 'classical part' and 'drawing quantum circuit')
 # Ns = [15, 21]
 # Ns = [15]
-Ns = [39, 51]
+Ns = [15, 21, 33, 35, 39]
 # Ns = [85, 91, 95, 119, 143]
 
 
