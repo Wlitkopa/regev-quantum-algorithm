@@ -18,6 +18,7 @@ from utils.convert_to_matrix_row import convert_to_matrix_row
 from utils.convert_milliseconds import convert_milliseconds
 from utils.calculate_R import calculate_R
 from utils.gaussian_amplitudes import gaussian_amplitudes
+from utils.approximated_gaussian_amplitudes import approximated_gaussian_amplitudes
 
 
 import logging
@@ -172,21 +173,33 @@ class Regev(ABC):
                     path_general = f"images/gauss/quantum_part/general/{d_mode}_{qd_mode}/{self.result.gauss_mu}_{self.result.gauss_sigma}/N_{N}"
                     path_decomposed = f"images/gauss/quantum_part/decomposed/{d_mode}_{qd_mode}/{self.result.gauss_mu}_{self.result.gauss_sigma}/N_{N}"
                 else:
-                    path_general = f"images/regev2/quantum_part/general/{d_mode}_{qd_mode}"
-                    path_decomposed = f"images/regev2/quantum_part/decomposed/{d_mode}_{qd_mode}"
+                    path_general = f"images/publikacja/general/{d_mode}_{qd_mode}"
+                    path_decomposed = f"images/publikacja/decomposed/{d_mode}_{qd_mode}"
 
                 if decompose:
                     directory_decomposed = Path(path_decomposed)
                     directory_decomposed.mkdir(parents=True, exist_ok=True)
                     filename = f'{path_decomposed}/N_{N}.png'
                     path = path_decomposed
-                    circuit.decompose().draw(output='mpl', filename=filename, style='iqp-dark', fold=-1)
+                    # circuit.decompose().draw(output='mpl', filename=filename, style='iqp-dark', fold=-1)
+                    fig = circuit.decompose().draw(output='mpl', style='iqp-dark', fold=-1)
+                    # circuit.decompose().draw(output='latex', filename=filename, style='iqp-dark', fold=-1)
+                    fig.savefig(f"{filename}.svg",
+                                bbox_inches="tight",
+                                pad_inches=0
+                            )
                 else:
                     directory_general = Path(path_general)
                     directory_general.mkdir(parents=True, exist_ok=True)
                     filename = f'{path_general}/N_{N}.png'
                     path = path_general
-                    circuit.draw(output='mpl', filename=filename, style='iqp-dark', fold=-1)
+                    # circuit.draw(output='mpl', filename=filename, style='iqp-dark', fold=-1)
+                    fig = circuit.draw(output='mpl', style='iqp-dark', fold=-1)
+                    # fig = circuit.draw(output='latex', filename=filename, style='iqp-dark', fold=-1)
+                    fig.savefig(f"{filename}.svg",
+                                bbox_inches="tight",
+                                pad_inches=0
+                            )
 
                 if gauss_init:
                     result_files = self.draw_gaussian_probabilities(path)
@@ -520,7 +533,295 @@ class Regev(ABC):
                 print(f"sum of probabilities: {result.probs_sum}")
 
 
-    def run_file_data_analyzer(self, Ns, d_qd_list, number_of_combinations, type_of_test_array=[1]):
+
+    def run_file_data_analyzer(self, Ns, d_qd_list, number_of_combinations, type_of_test_array, meas_R_list=[0]):
+
+        # Type of test
+        # 1 - deafult, check number_of_combinations random combinations of vectors return by quantum computer if returns
+        # correct powers, with probability according to this returned by quantum computer
+        # 2 - check number_of_combinations random combinations of vectors return by quantum computer if returns
+        # correct powers, but do not count fact that some vectors are replicated
+        # 3 - check number_of_combinations random combinations of totaly random vectors if returns
+        # correct powers
+        for t in range(len(type_of_test_array)):
+            type_of_test = type_of_test_array[t]
+
+            print(f"\n\nTYPE OF TEST: {type_of_test}\n\n")
+
+            for k in range(len(d_qd_list)):
+                d_ceil_bool = d_qd_list[k][0]
+                qd_ceil_bool = d_qd_list[k][1]
+
+                if d_ceil_bool:
+                    d_mode = "ceil"
+                else:
+                    d_mode = "floor"
+
+                if qd_ceil_bool:
+                    qd_mode = "ceil"
+                else:
+                    qd_mode = "floor"
+
+                for s in range(len(meas_R_list)):
+
+                    # If qubits were initialized using uniform superposition
+                    if meas_R_list[0] == 0:
+                        pass
+                    # If qubits were initialized using Gaussian superposition
+                    else:
+                        if meas_R_list[s][0]:
+                            # measuring output register
+                            measuring_output_register = 'with'
+                        else:
+                            # not measuring output register
+                            measuring_output_register = 'without'
+                        if meas_R_list[s][1]:
+                            # big R
+                            param_R = 'big'
+                        else:
+                            # small R
+                            param_R = 'small'
+
+
+                    for l in range(len(Ns)):
+
+                        N = Ns[l]
+                        print(f"\n================ N: {N} ================")
+
+                        if meas_R_list[0] != 0:
+                            print(f"================ GAUSS ================")
+
+                            # gauss_params_dir = "0_2866.0013424038925"
+                            file_name = None
+
+                            file_dir = f"output_data/gauss/quantum_part_{measuring_output_register}_output_register_measuring_{param_R}_R/{d_mode}_{qd_mode}"
+                            print(f"file_dir: {file_dir}")
+
+                            root_dir = Path(file_dir)
+                            target = f"N_{Ns[l]}"
+                            for p in root_dir.rglob(target):
+                                print("Found:", p)
+                                file_name = f"{p}"
+                                print(f"file_name.split('/'): {file_name.split('/')}")
+                                gauss_params_dir = file_name.split('/')[-2]
+                                print(f"gauss_params_dir: {gauss_params_dir}")
+                                break
+
+                            if file_name is None:
+                                print(f"File {target} not found")
+                                continue
+
+
+                            file_name = f"output_data/gauss/quantum_part_{measuring_output_register}_output_register_measuring_{param_R}_R/{d_mode}_{qd_mode}/{gauss_params_dir}/N_{N}"
+                            if not os.path.exists(file_name):
+                                print(f"File {file_name} doesn't exists")
+                                print(f"os.getcwd(): {os.getcwd()}")
+                                continue
+
+                        else:
+                            print(f"================ UNIFORM ================")
+
+                            file_name = f"output_data/regev/quantum_part/{d_mode}_{qd_mode}/N_{N}"
+
+                            if not os.path.exists(file_name):
+                                print(f"File {file_name} doesn't exists")
+                                continue
+
+                        # continue
+
+                        result = ""
+                        vectors = []
+                        p_q_vectors = []
+
+
+                        with open(file_name) as results:
+
+                            # read parameters from input file
+                            dq = 0
+                            for i in range(10):
+                                line = results.readline()
+                                if i == 0:
+                                    N = int(line.split(' ')[1])
+                                if i == 1:
+                                    n = int(line.split(' ')[1])
+                                if i == 4:
+                                    d = int(line.split(':')[1][:-1])
+                                if i == 5:
+                                    dq = int(line.split(':')[1][:-1])
+                                if i == 6:
+                                    a = ast.literal_eval(line.split(':')[1])
+                                    a_root = []
+                                    for a_ in a:
+                                        a_root.append(int(math.sqrt(a_)))
+
+                            # read vectors from file or generate vectors
+                            total_number_of_vectors = 0
+                            while (line := results.readline()) != '\n':
+                                v = line.split(':')[1][:-2]
+                                duplicate = int(line.split(' ')[2])
+                                if type_of_test == 1:
+                                    for i in range(duplicate):
+                                        vectors.append(ast.literal_eval(v))
+                                if type_of_test == 2:
+                                    vectors.append(ast.literal_eval(v))
+                                if type_of_test == 3:
+                                    total_number_of_vectors += duplicate
+                            if type_of_test == 3:
+                                for i in range(total_number_of_vectors):
+                                    v = []
+                                    for j in range(d):
+                                        v.append(randint(0, 2**dq))
+                                    vectors.append(v)
+                            if type_of_test == 2 and len(vectors) < d+4:
+                                result += f"\nToo little variety of vectors for number {N}\n"
+                                print(f"\nToo little variety of vectors for number {N}\n")
+
+                            else:
+                                start = time.time()
+
+                                # calculate parameters necessary to create lattice
+                                m = math.ceil(n / d) + 2
+                                powers = []
+                                for i in range(m):
+                                    powers.append(i)
+
+
+                                # This fragment of code allows to find exact value of T
+                                # T = N
+                                # for p in itertools.product(powers, repeat=d):
+                                #     if p == (0,) * d:
+                                #         continue
+                                #     T_tmp = 1
+                                #     v_len_tmp = 1
+                                #     for i in range(d):
+                                #         T_tmp *= pow(a_root[i], p[i], N)
+                                #         v_len_tmp += pow(p[i], 2)
+                                #     v_len_tmp = math.ceil(math.sqrt(v_len_tmp))
+                                #     if T_tmp % N == 1 and v_len_tmp < T:
+                                #         T = v_len_tmp
+
+                                # This fragment of code estimate the value of T
+
+                                T = math.ceil(math.exp(n/(2*d)))
+                                n = math.ceil(math.log(N, 2))
+                                # If qubits were initialized using uniform superposition
+                                if meas_R_list[0] != 0:
+                                    # If R is "big"
+                                    if meas_R_list[0][1]:
+                                        R = math.ceil(6 * T * math.sqrt((d + 5) * (2 * d + 4) * (d / 2)) * (2 ** ((n + 1) / (d + 4) + d + 2)))
+                                    # If R is "small"
+                                    else:
+                                        R = math.sqrt(2 * d) + 1
+                                else:
+                                    R = math.ceil(6 * T * math.sqrt((d + 5) * (2 * d + 4) * (d / 2)) * (2 ** ((n + 1) / (d + 4) + d + 2)))
+                                t = 1 + math.ceil(math.log(math.sqrt(d) * R, 2))
+                                delta = math.sqrt(d / 2) / R
+                                delta_inv = math.ceil(R / math.sqrt(d / 2))
+                                print(f"Parameters:\nN: {N}\nR: {R}\nT: {T}\nt: {t}\ndelta: {delta}\ndelta_inv: {delta_inv}")
+
+                                result += (f"N: {N}\n"
+                                           f"n: {n}\n"
+                                           f"number_of_primes (d): {d}\n"
+                                           f"exp_register_width (qd): {dq}\n"
+                                           f"primes: {a_root}\n\n"
+                                           f"R: {R}\n"
+                                           f"T: {T}\n"
+                                           f"t: {t}\n"
+                                           f"delta: {delta}\n"
+                                           f"delta_inv: {delta_inv}\n")
+
+                                # create block of lattice
+                                I_d = np.identity(d)
+                                zeros_d_d4 = np.zeros((d, d + 4))
+                                I_d4_d4_delta = delta_inv * np.identity(d + 4)
+
+                                success1 = 0
+                                success2 = 0
+
+                                for _ in range(number_of_combinations):
+                                    # get random combinations from vectors
+                                    shuffle(vectors)
+                                    w_d4_d = vectors[:d + 4]
+                                    # create lattice M with usage created blocks according to Regev algorithm
+                                    M = np.block([
+                                        [I_d, zeros_d_d4],
+                                        [np.matrix(w_d4_d) * (delta_inv / (2 ** t)), I_d4_d4_delta],
+                                    ])
+                                    np.set_printoptions(precision=6, suppress=True)
+
+                                    # make LLL algorithm on columns of lattice M
+                                    M_LLL = olll.reduction(M.transpose().tolist(), 0.75)
+                                    M_LLL_t = np.matrix(M_LLL).tolist()
+
+                                    # create flags to count different solutions from lattice once
+                                    s1 = 0
+                                    s2 = 0
+
+                                    # check if given combinations of vectors returns correct solution
+                                    for i in range(0, 2*d + 4):
+                                        square = 1
+                                        f = 0
+                                        temp_vector = []
+                                        for j in range(d):
+                                            square *= pow(a_root[j], (M_LLL_t[i][j]), N)
+                                            square %= N
+                                            temp_vector.append(M_LLL_t[i][j])
+                                        if (square * square) % N == 1 and f == 0 and temp_vector != d*[0]:
+                                            s1 = 1
+                                            if square != N - 1 and square != 1:
+                                                s2 = 1
+                                                p_q_vectors.append(temp_vector)
+                                                break
+
+                                    if s1 == 1:
+                                        success1 += 1
+
+                                    if s2 == 1:
+                                        success2 += 1
+
+                                end = time.time()
+                                exec_time = (end - start) * (10 ** 3)
+                                converted_time = convert_milliseconds(exec_time)
+
+                                result += (f"Percent of combinations (with positive values of result vector) that gives % N = 1: {success1 * 100 / number_of_combinations}%\n"
+                                           f"Percent of combinations (with positive values of result vector) that give p and q: {success2 * 100 / number_of_combinations}%\n"
+                                           f"Vectors that gives p and q: {p_q_vectors}\n"
+                                           f"\nexec_time (ms): {exec_time} ms\n"
+                                           f"exec_time: {converted_time}")
+
+                                print(f'Per cent of combinations (with positive values of result vector) that gives % N = 1: {success1 * 100 / number_of_combinations}%')
+                                print(f'Per cent of combinations (with positive values of result vector) that give p and q: {success2 * 100 / number_of_combinations}%')
+                                print(f"Vectors that gives p and q: {p_q_vectors}")
+                                print(f"\nexec_time: {exec_time} ms")
+                                print(f"exec_time: {converted_time}")
+
+                        type_dir = ""
+
+                        if type_of_test == 1:
+                            type_dir = "type_1"
+                        elif type_of_test == 2:
+                            type_dir = "type_2"
+                        elif type_of_test == 3:
+                            type_dir = "type_3"
+
+                        # If qubits were initialized using uniform superposition
+                        if meas_R_list[0] == 0:
+                            dir_path = f"output_data/regev/classical_part/file_analysis_all_types/{type_dir}/{d_mode}_{qd_mode}"
+                        # If qubits were initialized using Gaussian superposition
+                        else:
+                            dir_path = f"output_data/gauss/classical_part/file_analysis_all_types_{measuring_output_register}_output_register_measuring_{param_R}_R/{type_dir}/{d_mode}_{qd_mode}/{gauss_params_dir}"
+                            directory = Path(dir_path)
+                            directory.mkdir(parents=True, exist_ok=True)
+
+                        file = open(f"{dir_path}/N_{N}", "w")
+                        file.write(result)
+                        file.close()
+
+
+
+
+
+    def run_file_data_analyzer_prev(self, Ns, d_qd_list, number_of_combinations, type_of_test_array=[1]):
 
         # Type of test
         # 1 - deafult, check number_of_combinations random combinations of vectors return by quantum computer if returns
@@ -550,12 +851,14 @@ class Regev(ABC):
 
                 for l in range(len(Ns)):
 
+                    gauss_params_dir = "0_2866.0013424038925"
+
                     N = Ns[l]
                     print(f"\nN: {N}")
-                    file_name = f"./output_data/regev/quantum_part/{d_mode}_{qd_mode}/N_{N}"
-
+                    file_name = f"output_data/gauss/quantum_part_without_output_registry_measuring_big_R/{d_mode}_{qd_mode}/{gauss_params_dir}/N_{N}"
                     if not os.path.exists(file_name):
                         print(f"File {file_name} doesn't exists")
+                        print(f"os.getcwd(): {os.getcwd()}")
                         continue
 
 
@@ -726,7 +1029,7 @@ class Regev(ABC):
                     elif type_of_test == 3:
                         type_dir = "type_3"
 
-                    file = open(f"output_data/regev/classical_part/file_analysis_5_all_types/{type_dir}/{dir1_part}_{dir2_part}/N_{N}", "w")
+                    file = open(f"output_data/gauss/classical_part/file_analysis_all_types_without_output_register_meas_big_R/{type_dir}/{d_mode}_{qd_mode}/{gauss_params_dir}/N_{N}", "w")
                     file.write(result)
                     file.close()
 
@@ -861,11 +1164,19 @@ class Regev(ABC):
             else:
                 sigma = gauss_init[1]
 
-            amps = gaussian_amplitudes(qd, mu=mu, sigma=sigma)
+            # PODEJŚCIE Z PIERWSZEJ PRÓBY W RAMACH PROJEKTU NA PRZEDMIOCIE METODYKI PROJEKTÓW
+            # amps = gaussian_amplitudes(qd, mu=mu, sigma=sigma)
             # print(f"=============== sigma: {sigma}")
             # print(f"=============== amps: {amps}")
             # print(f"=============== amps**2: {amps**2}")
             # print(f"=============== sum(amps**2): {sum(amps**2)}")
+
+            # NOWE PODEJŚCIE - WYKORZYSTANIE PRZYBLIŻENIA FUNKCJI GAUSSA ZAPROPONOWANEGO PRZEZ MIDASA
+            amps = gaussian_amplitudes(qd)
+            print(f"=============== sigma: {sigma}")
+            print(f"=============== amps: {amps}")
+            print(f"=============== amps**2: {amps**2}")
+            print(f"=============== sum(amps**2): {sum(amps**2)}")
 
 
             self.result.gauss_init_mu = gauss_init[0]
@@ -874,7 +1185,7 @@ class Regev(ABC):
             self.result.gauss_sigma = sigma
             self.result.amps = amps
             self.result.probs = amps**2
-            self.result.probs_sum = amps**2
+            self.result.probs_sum = sum(amps**2)
 
         self.result.N = N
         self.result.n = n
