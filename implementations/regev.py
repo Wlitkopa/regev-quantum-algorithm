@@ -62,7 +62,7 @@ class Regev(ABC):
         self.vectors = []
 
 
-    def draw_gaussian_probabilities(self, path):
+    def draw_gaussian_probabilities(self, path, measure_output_register, param_R):
         print("=========== DRAW GAUSSIAN ============")
         print(f"self.result.amps: {self.result.amps}")
         print(f"self.result.d: {self.result.number_of_primes}")
@@ -76,8 +76,11 @@ class Regev(ABC):
         qd = self.result.exp_register_width
         n = self.result.n
         N = self.result.N
+        mu_init = self.result.gauss_init_mu
+        sigma_init = self.result.gauss_init_sigma
         mu = self.result.gauss_mu
         R = self.result.gauss_R
+        probs_sum = self.result.probs_sum
         sigma = self.result.gauss_sigma
 
 
@@ -91,10 +94,16 @@ class Regev(ABC):
 
         result_data += (f"d: {d}\n"
                         f"qd: {qd}\n"
-                        f"N: {N}\n\n"
+                        f"N: {N}\n"
+                        f"n: {n}\n\n"
+                        f"measure_output_register: {measure_output_register}\n"
+                        f"mu_init: {mu_init}\n"
+                        f"sigma_init: {sigma_init}\n"
                         f"mu: {mu}\n"
+                        f"param_R: {param_R}\n"
                         f"R: {R}\n"
                         f"sigma: {sigma}\n"
+                        f"probabilities sum: {probs_sum}\n"
                         f"probability amplitudes:\n{y}")
 
         # directory = Path(f"{path}/N_{N}")
@@ -146,52 +155,77 @@ class Regev(ABC):
         return result_files
 
 
-    def draw_quantum_circuit(self, Ns, d_qd_list, decompose=False, gauss_init=False, measure_output_register=False):
-
+    # def draw_quantum_circuit(self, Ns, d_qd_list, decompose=False, gauss_init=False, measure_output_register=False):
+    def draw_quantum_circuit(self, Ns, d_qd_list, decompose=False, gauss_init=False, meas_R_list=[0]):
         result_files = ""
-        for i in range(len(d_qd_list)):
-            d_ceil_bool = d_qd_list[i][0]
-            qd_ceil_bool = d_qd_list[i][1]
-
-            for j in range(len(Ns)):
-
-                N = Ns[j]
-
-                if d_ceil_bool:
-                    d_mode = "ceil"
+        for s in range(len(meas_R_list)):
+            # If qubits were initialized using uniform superposition
+            if meas_R_list[0] == 0:
+                measure_output_register = False
+                pass
+            # If qubits were initialized using Gaussian superposition
+            else:
+                if meas_R_list[s][0]:
+                    # measuring output register
+                    measuring_output_register = 'with'
+                    measure_output_register = True
                 else:
-                    d_mode = "floor"
+                    # not measuring output register
+                    measuring_output_register = 'without'
+                    measure_output_register = False
 
-                if qd_ceil_bool:
-                    qd_mode = "ceil"
+                if meas_R_list[s][1]:
+                    # big R
+                    param_R = 'big'
                 else:
-                    qd_mode = "floor"
+                    # small R
+                    param_R = 'small'
 
-                circuit = self.construct_circuit(N, d_ceil_bool, qd_ceil_bool, gauss_init=gauss_init, measure_output_register=measure_output_register)
+            for i in range(len(d_qd_list)):
+                d_ceil_bool = d_qd_list[i][0]
+                qd_ceil_bool = d_qd_list[i][1]
 
-                if gauss_init:
-                    path_general = f"images/gauss/quantum_part/general/{d_mode}_{qd_mode}/{self.result.gauss_mu}_{self.result.gauss_sigma}/N_{N}"
-                    path_decomposed = f"images/gauss/quantum_part/decomposed/{d_mode}_{qd_mode}/{self.result.gauss_mu}_{self.result.gauss_sigma}/N_{N}"
-                else:
-                    path_general = f"images/publikacja/general/{d_mode}_{qd_mode}"
-                    path_decomposed = f"images/publikacja/decomposed/{d_mode}_{qd_mode}"
+                for j in range(len(Ns)):
 
-                if decompose:
-                    directory_decomposed = Path(path_decomposed)
-                    directory_decomposed.mkdir(parents=True, exist_ok=True)
-                    filename = f'{path_decomposed}/N_{N}.png'
-                    path = path_decomposed
-                    # circuit.decompose().draw(output='mpl', filename=filename, style='iqp-dark', fold=-1)
-                    fig = circuit.decompose().draw(output='mpl', style='iqp-dark', fold=-1)
-                    # circuit.decompose().draw(output='latex', filename=filename, style='iqp-dark', fold=-1)
-                    fig.savefig(f"{filename}.svg",
-                                bbox_inches="tight",
-                                pad_inches=0
-                            )
-                else:
+                    N = Ns[j]
+
+                    if d_ceil_bool:
+                        d_mode = "ceil"
+                    else:
+                        d_mode = "floor"
+
+                    if qd_ceil_bool:
+                        qd_mode = "ceil"
+                    else:
+                        qd_mode = "floor"
+
+                    circuit = self.construct_circuit(N, d_ceil_bool, qd_ceil_bool, gauss_init=gauss_init, measure_output_register=measure_output_register)
+
+                    if gauss_init:
+                        # path_general = f"images/gauss_approximated/quantum_part/quantum_part_{measuring_output_register}_output_register_measuring_{param_R}_R/{d_mode}_{qd_mode}/n_{self.result.n}_R_{self.result.gauss_R}/N_{N}"
+                        # path_decomposed = f"images/gauss_approximated/quantum_part/quantum_part_{measuring_output_register}_output_register_measuring_{param_R}_R/{d_mode}_{qd_mode}/n_{self.result.n}_R_{self.result.gauss_R}/N_{N}"
+                        path_general = f"images/sandbox/N_{N}"
+                        path_decomposed = f"images/sandbox/N_{N}_decomposed"
+                    else:
+                        path_general = f"images/publikacja/general/{d_mode}_{qd_mode}"
+                        path_decomposed = f"images/publikacja/decomposed/{d_mode}_{qd_mode}"
+
+                    if decompose:
+                        directory_decomposed = Path(path_decomposed)
+                        directory_decomposed.mkdir(parents=True, exist_ok=True)
+                        filename = f'{path_decomposed}/N_{N}_decomposed'
+                        path = path_decomposed
+                        # circuit.decompose().draw(output='mpl', filename=filename, style='iqp-dark', fold=-1)
+                        fig = circuit.decompose().draw(output='mpl', style='iqp-dark', fold=-1)
+                        # circuit.decompose().draw(output='latex', filename=filename, style='iqp-dark', fold=-1)
+                        fig.savefig(f"{filename}.svg",
+                                    bbox_inches="tight",
+                                    pad_inches=0
+                                )
+
                     directory_general = Path(path_general)
                     directory_general.mkdir(parents=True, exist_ok=True)
-                    filename = f'{path_general}/N_{N}.png'
+                    filename = f'{path_general}/N_{N}'
                     path = path_general
                     # circuit.draw(output='mpl', filename=filename, style='iqp-dark', fold=-1)
                     fig = circuit.draw(output='mpl', style='iqp-dark', fold=-1)
@@ -201,22 +235,24 @@ class Regev(ABC):
                                 pad_inches=0
                             )
 
-                if gauss_init:
-                    result_files = self.draw_gaussian_probabilities(path)
+                    if gauss_init:
+                        result_files = self.draw_gaussian_probabilities(path, measure_output_register, param_R)
 
-                # else:
-                #     if decompose:
-                #         filename = f'images/decomposed/{d_mode}_{qd_mode}/N_{N}.png'
-                #         circuit.decompose().draw(output='mpl', filename=filename, style='iqp-dark', fold=-1)
-                #     else:
-                #         filename = f'images/general/{d_mode}_{qd_mode}/N_{N}.png'
-                #         circuit.draw(output='mpl', filename=filename, style='iqp-dark', fold=-1)
+                    # else:
+                    #     if decompose:
+                    #         filename = f'images/decomposed/{d_mode}_{qd_mode}/N_{N}.png'
+                    #         circuit.decompose().draw(output='mpl', filename=filename, style='iqp-dark', fold=-1)
+                    #     else:
+                    #         filename = f'images/general/{d_mode}_{qd_mode}/N_{N}.png'
+                    #         circuit.draw(output='mpl', filename=filename, style='iqp-dark', fold=-1)
 
-                result_files += f" - {filename}"
-                print(f"Created files:\n{result_files}")
+                    result_files += f" - {filename}"
+                    print(f"Created files:\n{result_files}")
 
 
-    def run_all_algorithm(self, Ns, d_qd_list, number_of_combinations, type_of_test, find_pq=False, gauss_init=False, measure_output_register=False):
+    # def run_all_algorithm(self, Ns, d_qd_list, number_of_combinations, type_of_test, find_pq=False, gauss_init=False, measure_output_register=False):
+    def run_all_algorithm(self, Ns, d_qd_list, number_of_combinations, type_of_test, find_pq=False, gauss_init=False, meas_R_list=[0]):
+
         for i in range(len(d_qd_list)):
             d_ceil_bool = d_qd_list[i][0]
             qd_ceil_bool = d_qd_list[i][1]
@@ -236,72 +272,99 @@ class Regev(ABC):
                 else:
                     qd_mode = "floor"
 
-                print(f"\nN: {N}")
-                start = time.time()
-                quantum_result = self.get_vectors(N, d_ceil=d_ceil_bool, qd_ceil=qd_ceil_bool, semi_classical=False, gauss_init=gauss_init, measure_output_register=measure_output_register)
-                classic_result = self.run_classical_part(number_of_combinations, N, quantum_result.n, quantum_result.number_of_primes, quantum_result.exp_register_width, quantum_result.squared_primes, quantum_result.output_data, type_of_test, find_pq)
-                end = time.time()
-                exec_time = (end - start) * 1000
-                converted_time = convert_milliseconds(exec_time)
+                for s in range(len(meas_R_list)):
+                    # If qubits were initialized using uniform superposition
+                    if meas_R_list[0] == 0:
+                        measure_output_register = False
+                        pass
+                    # If qubits were initialized using Gaussian superposition
+                    else:
+                        if meas_R_list[s][0]:
+                            # measuring output register
+                            measuring_output_register = 'with'
+                            measure_output_register = True
+                        else:
+                            # not measuring output register
+                            measuring_output_register = 'without'
+                            measure_output_register = False
 
-                result_str += (f"=============== QUANTUM PART ===============\n"
-                               f"N: {quantum_result.N}\n"
-                               f"n: {quantum_result.n}\n"
-                               f"d_ceil: {quantum_result.d_ceil}\n"
-                               f"qd_ceil: {quantum_result.qd_ceil}\n"
-                               f"number_of_primes (d): {quantum_result.number_of_primes}\n"
-                               f"exp_register_width (qd): {quantum_result.exp_register_width}\n"
-                               f"squared_primes: {quantum_result.squared_primes}\n"
-                               f"output_data: {quantum_result.output_data}\n"
-                               f"\nvectors: {quantum_result}\n"
-                               f"\nquantum part exec_time (ms): {quantum_result.quantum_exec_time}ms\n"
-                               f"quantum part exec_time: {convert_milliseconds(quantum_result.quantum_exec_time)}\n"
-                               f"\noutput register measured: {quantum_result.measure_output_register}\n"
-                               f"original output data: {quantum_result.output_data_original}\n"
-                               f"\ngauss_init_mu: {quantum_result.gauss_init_mu}\n"
-                               f"gauss_init_sigma: {quantum_result.gauss_init_sigma}"
-                               f"gauss_R: {quantum_result.gauss_R}\n"
-                               f"gauss_mu: {quantum_result.gauss_mu}\n"
-                               f"gauss_sigma: {quantum_result.gauss_sigma}\n"
-                               f"\namps: {quantum_result.amps}\n\n"
-                               f"statevector: {quantum_result.state}\n"
-                               f"probabilities: {quantum_result.probs}\n"
-                               f"sum of probabilities: {quantum_result.probs_sum}\n")
+                        if meas_R_list[s][1]:
+                            # big R
+                            param_R = 'big'
+                            is_R_big = True
+                        else:
+                            # small R
+                            param_R = 'small'
+                            is_R_big = False
 
-                result_str += (f"\n=============== CLASSICAL PART ===============\n"
-                               f"R: {classic_result.R}\n"
-                               f"T: {classic_result.T}\n"
-                               f"t: {classic_result.t}\n"
-                               f"delta: {classic_result.delta}\n"
-                               f"delta_inv: {classic_result.delta_inv}\n"
-                               f"type_of_test: {type_of_test}\n"
-                               f"number_of_combinations: {number_of_combinations}\n"
-                               f"\nclassical part exec_time (ms): {classic_result.classical_exec_time}ms\n"
-                               f"classical part exec_time: {convert_milliseconds(classic_result.classical_exec_time)}\n")
+                    print(f"\nN: {N}")
+                    start = time.time()
+                    quantum_result = self.get_vectors(N, d_ceil=d_ceil_bool, qd_ceil=qd_ceil_bool, semi_classical=False, gauss_init=gauss_init, measure_output_register=measure_output_register, is_R_big=is_R_big)
+                    classic_result = self.run_classical_part(number_of_combinations, N, quantum_result.n, quantum_result.number_of_primes, quantum_result.exp_register_width, quantum_result.squared_primes, quantum_result.output_data, type_of_test, find_pq)
+                    end = time.time()
+                    exec_time = (end - start) * 1000
+                    converted_time = convert_milliseconds(exec_time)
+
+                    result_str += (f"=============== QUANTUM PART ===============\n"
+                                   f"N: {quantum_result.N}\n"
+                                   f"n: {quantum_result.n}\n"
+                                   f"d_ceil: {quantum_result.d_ceil}\n"
+                                   f"qd_ceil: {quantum_result.qd_ceil}\n"
+                                   f"number_of_primes (d): {quantum_result.number_of_primes}\n"
+                                   f"exp_register_width (qd): {quantum_result.exp_register_width}\n"
+                                   f"squared_primes: {quantum_result.squared_primes}\n"
+                                   f"output_data: {quantum_result.output_data}\n"
+                                   f"\nvectors: {quantum_result}\n"
+                                   f"\nquantum part exec_time (ms): {quantum_result.quantum_exec_time}ms\n"
+                                   f"quantum part exec_time: {convert_milliseconds(quantum_result.quantum_exec_time)}\n"
+                                   f"\noutput register measured: {quantum_result.measure_output_register}\n"
+                                   f"original output data: {quantum_result.output_data_original}\n"
+                                   f"\ngauss_init_mu: {quantum_result.gauss_init_mu}\n"
+                                   f"gauss_init_sigma: {quantum_result.gauss_init_sigma}"
+                                   f"gauss_R: {quantum_result.gauss_R}\n"
+                                   f"gauss_mu: {quantum_result.gauss_mu}\n"
+                                   f"gauss_sigma: {quantum_result.gauss_sigma}\n"
+                                   f"\namps: {quantum_result.amps}\n\n"
+                                   f"statevector: {quantum_result.state}\n"
+                                   f"probabilities: {quantum_result.probs}\n"
+                                   f"sum of probabilities: {quantum_result.probs_sum}\n")
+
+                    result_str += (f"\n=============== CLASSICAL PART ===============\n"
+                                   f"R: {classic_result.R}\n"
+                                   f"T: {classic_result.T}\n"
+                                   f"t: {classic_result.t}\n"
+                                   f"delta: {classic_result.delta}\n"
+                                   f"delta_inv: {classic_result.delta_inv}\n"
+                                   f"type_of_test: {type_of_test}\n"
+                                   f"number_of_combinations: {number_of_combinations}\n"
+                                   f"\nclassical part exec_time (ms): {classic_result.classical_exec_time}ms\n"
+                                   f"classical part exec_time: {convert_milliseconds(classic_result.classical_exec_time)}\n")
 
 
-                result_str += f"\n=============== ALL TOGETHER ===============\n"
+                    result_str += f"\n=============== ALL TOGETHER ===============\n"
 
-                if find_pq:
-                    result_str += (f"p: {classic_result.p}\n"
-                                   f"q: {classic_result.q}\n")
+                    if find_pq:
+                        result_str += (f"p: {classic_result.p}\n"
+                                       f"q: {classic_result.q}\n")
 
-                result_str += (f"total exec_time (ms): {exec_time}ms\n"
-                              f"total exec_time: {converted_time}")
+                    result_str += (f"total exec_time (ms): {exec_time}ms\n"
+                                  f"total exec_time: {converted_time}")
 
 
-                if gauss_init:
-                    path = f"output_data/gauss/all_parts/quantum_part/{d_mode}_{qd_mode}/{quantum_result.gauss_mu}_{quantum_result.gauss_sigma}"
-                else:
-                    path = f"output_data/regev2/all_parts/quantum_part/{d_mode}_{qd_mode}"
+                    if gauss_init:
+                        directory_general = Path(path)
+                        directory_general.mkdir(parents=True, exist_ok=True)
+                        path = f"output_data/gauss_approximated/all_parts/quantum_part/{measuring_output_register}_output_register_measuring_{param_R}_R/{d_mode}_{qd_mode}/n_{quantum_result.n}_R_{quantum_result.gauss_R}"
+                    else:
+                        path = f"output_data/regev2/all_parts/quantum_part/{d_mode}_{qd_mode}"
 
-                directory = Path(path)
-                directory.mkdir(parents=True, exist_ok=True)
+                    directory = Path(path)
+                    directory.mkdir(parents=True, exist_ok=True)
 
-                file = open(f"{path}/N_{N}", "w")
+                    file = open(f"{path}/N_{N}", "w")
 
-                file.write(result_str)
-                file.close()
+                    file.write(result_str)
+                    file.close()
 
         return 0
 
@@ -444,7 +507,7 @@ class Regev(ABC):
         return classic_result
 
 
-    def run_quantum_part_data_collection(self, Ns, d_qd_list, gauss_init, measure_output_register=False):
+    def run_quantum_part_data_collection(self, Ns, d_qd_list, gauss_init, measure_output_register=False, meas_R_list=[0]):
 
         for i in range(len(d_qd_list)):
             d_ceil_bool = d_qd_list[i][0]
@@ -452,85 +515,105 @@ class Regev(ABC):
 
             for j in range(len(Ns)):
 
-                N = Ns[j]
-                print(f"\nN: {N}")
+                for s in range(len(meas_R_list)):
+                    if meas_R_list[s][0]:
+                        # measuring output register
+                        measuring_output_register = 'with'
+                        measure_output_register = True
+                    else:
+                        # not measuring output register
+                        measuring_output_register = 'without'
+                        measure_output_register = False
 
-                start = time.time()
-                result = self.get_vectors(N, d_ceil=d_ceil_bool, qd_ceil=qd_ceil_bool, semi_classical=False, gauss_init=gauss_init, measure_output_register=measure_output_register)
-                end = time.time()
-                exec_time = (end - start) * (10 ** 3)
-                converted_time = convert_milliseconds(exec_time)
+                    if meas_R_list[s][1]:
+                        # big R
+                        param_R = 'big'
+                        is_R_big = True
+                    else:
+                        # small R
+                        param_R = 'small'
+                        is_R_big = False
 
-                vectors = convert_to_matrix_row(result.output_data)
+                    N = Ns[j]
+                    print(f"\nN: {N}")
 
-                result_str = (f"N: {result.N}\n"
-                              f"n: {result.n}\n"
-                              f"d_ceil: {result.d_ceil}\n"
-                              f"qd_ceil: {result.qd_ceil}\n"
-                              f"number_of_primes (d): {result.number_of_primes}\n"
-                              f"exp_register_width (qd): {result.exp_register_width}\n"
-                              f"squared_primes: {result.squared_primes}\n"
-                              f"output_data: {result.output_data}\n"
-                              f"\nvectors: {vectors}\n"
-                              f"\nexec_time (ms): {exec_time} ms\n"
-                              f"\nexec_time: {converted_time}\n"
-                              f"\noutput register measured: {result.measure_output_register}\n"
-                              f"original output data: {result.output_data_original}\n"
-                              f"\ngauss_init_mu: {result.gauss_init_mu}\n"
-                              f"gauss_init_sigma: {result.gauss_init_sigma}\n"
-                              f"gauss_R: {result.gauss_R}\n"
-                              f"gauss_mu: {result.gauss_mu}\n"
-                              f"gauss_sigma: {result.gauss_sigma}\n"
-                              f"amps: {result.amps}\n\n"
-                              f"\nstatevector: {result.state}\n"
-                              f"probabilities: {result.probs}\n"
-                              f"sum of probabilities: {result.probs_sum}")
+                    start = time.time()
+                    result = self.get_vectors(N, d_ceil=d_ceil_bool, qd_ceil=qd_ceil_bool, semi_classical=False, gauss_init=gauss_init, measure_output_register=measure_output_register)
+                    end = time.time()
+                    exec_time = (end - start) * (10 ** 3)
+                    converted_time = convert_milliseconds(exec_time)
 
-                if d_ceil_bool:
-                    d_mode = "ceil"
-                else:
-                    d_mode = "floor"
+                    vectors = convert_to_matrix_row(result.output_data)
 
-                if qd_ceil_bool:
-                    qd_mode = "ceil"
-                else:
-                    qd_mode = "floor"
+                    result_str = (f"N: {result.N}\n"
+                                  f"n: {result.n}\n"
+                                  f"d_ceil: {result.d_ceil}\n"
+                                  f"qd_ceil: {result.qd_ceil}\n"
+                                  f"number_of_primes (d): {result.number_of_primes}\n"
+                                  f"exp_register_width (qd): {result.exp_register_width}\n"
+                                  f"squared_primes: {result.squared_primes}\n"
+                                  f"output_data: {result.output_data}\n"
+                                  f"\nvectors: {vectors}\n"
+                                  f"\nexec_time (ms): {exec_time} ms\n"
+                                  f"\nexec_time: {converted_time}\n"
+                                  f"\noutput register measured: {result.measure_output_register}\n"
+                                  f"original output data: {result.output_data_original}\n"
+                                  f"\ngauss_init_mu: {result.gauss_init_mu}\n"
+                                  f"gauss_init_sigma: {result.gauss_init_sigma}\n"
+                                  f"gauss_R: {result.gauss_R}\n"
+                                  f"gauss_mu: {result.gauss_mu}\n"
+                                  f"gauss_sigma: {result.gauss_sigma}\n"
+                                  f"amps: {result.amps}\n\n"
+                                  f"\nstatevector: {result.state}\n"
+                                  f"probabilities: {result.probs}\n"
+                                  f"sum of probabilities: {result.probs_sum}")
 
-                if gauss_init:
-                    path = f"output_data/gauss/quantum_part/{d_mode}_{qd_mode}/{result.gauss_mu}_{result.gauss_sigma}"
-                else:
-                    path = f"output_data/regev2/quantum_part/{d_mode}_{qd_mode}"
+                    if d_ceil_bool:
+                        d_mode = "ceil"
+                    else:
+                        d_mode = "floor"
 
-                directory = Path(path)
-                directory.mkdir(parents=True, exist_ok=True)
+                    if qd_ceil_bool:
+                        qd_mode = "ceil"
+                    else:
+                        qd_mode = "floor"
 
-                file = open(f"{path}/N_{N}", "w")
-                file.write(result_str)
-                file.close()
+                    if gauss_init:
+                        # path = f"output_data/gauss/quantum_part/{d_mode}_{qd_mode}/{result.gauss_mu}_{result.gauss_sigma}"
+                        path = f"output_data/gauss_approximated/quantum_part/quantum_part_{measuring_output_register}_output_register_measuring_{param_R}_R/{d_mode}_{qd_mode}/n_{self.result.n}_R_{self.result.gauss_R}/N_{N}"
+                    else:
+                        path = f"output_data/regev2/quantum_part/{d_mode}_{qd_mode}"
 
-                print(f"N: {result.N}")
-                print(f"n: {result.n}")
-                print(f"d_ceil: {result.d_ceil}")
-                print(f"qd_ceil: {result.qd_ceil}")
-                print(f"number_of_primes: {result.number_of_primes}")
-                print(f"exp_register_width: {result.exp_register_width}")
-                print(f"squared_primes: {result.squared_primes}")
+                    directory = Path(path)
+                    directory.mkdir(parents=True, exist_ok=True)
 
-                print(f"output_data: {result.output_data}")
-                print(f"\nvectors: {vectors}\n")
-                print(f"exec_time: {exec_time}ms")
-                print(f"converted_time: {converted_time}")
+                    file = open(f"{path}/N_{N}", "w")
+                    file.write(result_str)
+                    file.close()
 
-                print(f"gauss_init_mu: {result.gauss_init_mu}")
-                print(f"gauss_init_sigma: {result.gauss_init_sigma}")
-                print(f"gauss_R: {result.gauss_R}")
-                print(f"gauss_mu: {result.gauss_mu}")
-                print(f"gauss_sigma: {result.gauss_sigma}")
-                print(f"amps: {result.amps}")
+                    print(f"N: {result.N}")
+                    print(f"n: {result.n}")
+                    print(f"d_ceil: {result.d_ceil}")
+                    print(f"qd_ceil: {result.qd_ceil}")
+                    print(f"number_of_primes: {result.number_of_primes}")
+                    print(f"exp_register_width: {result.exp_register_width}")
+                    print(f"squared_primes: {result.squared_primes}")
 
-                print(f"statevector: {result.state}")
-                print(f"probabilities: {result.probs}")
-                print(f"sum of probabilities: {result.probs_sum}")
+                    print(f"output_data: {result.output_data}")
+                    print(f"\nvectors: {vectors}\n")
+                    print(f"exec_time: {exec_time}ms")
+                    print(f"converted_time: {converted_time}")
+
+                    print(f"gauss_init_mu: {result.gauss_init_mu}")
+                    print(f"gauss_init_sigma: {result.gauss_init_sigma}")
+                    print(f"gauss_R: {result.gauss_R}")
+                    print(f"gauss_mu: {result.gauss_mu}")
+                    print(f"gauss_sigma: {result.gauss_sigma}")
+                    print(f"amps: {result.amps}")
+
+                    print(f"statevector: {result.state}")
+                    print(f"probabilities: {result.probs}")
+                    print(f"sum of probabilities: {result.probs_sum}")
 
 
 
@@ -1041,14 +1124,14 @@ class Regev(ABC):
                         self.get_factors(vector, a_root, N)
 
 
-    def get_vectors(self, N: int, d_ceil=False, qd_ceil=False, semi_classical=False, gauss_init=False, measure_output_register=False) -> 'RegevResult':
+    def get_vectors(self, N: int, d_ceil=False, qd_ceil=False, semi_classical=False, gauss_init=False, measure_output_register=False, is_R_big=False) -> 'RegevResult':
 
         print("Running quantum part")
 
         start = time.time()
         self._validate_input(N)
 
-        circuit = self.construct_circuit(N, d_ceil, qd_ceil, semi_classical, measurement=True, gauss_init=gauss_init, measure_output_register=measure_output_register)
+        circuit = self.construct_circuit(N, d_ceil, qd_ceil, semi_classical, measurement=True, gauss_init=gauss_init, measure_output_register=measure_output_register, is_R_big=is_R_big)
         # aersim = AerSimulator(method="extended_stabilizer")
         aersim = AerSimulator()
 
@@ -1123,7 +1206,7 @@ class Regev(ABC):
         return int(measurement, base=2)
 
 
-    def construct_circuit(self, N: int, d_ceil, qd_ceil, semi_classical: bool = False, measurement: bool = True, gauss_init = False, measure_output_register: bool = False):
+    def construct_circuit(self, N: int, d_ceil, qd_ceil, semi_classical: bool = False, measurement: bool = True, gauss_init = False, measure_output_register: bool = False, is_R_big=False):
 
         # Tutaj gauss_init jako [mu, sigma]
 
@@ -1147,6 +1230,8 @@ class Regev(ABC):
         # Jeżeli gauss_init = [False, False], to użyte są domyślne parametry
         if gauss_init:
             a = self.generate_a(d, N)
+            R = calculate_R(d, qd, N, n, a, is_R_big=is_R_big)
+            self.result.gauss_R = R
 
             if isinstance(gauss_init[0], bool):
                 dim = 2 ** n
@@ -1157,10 +1242,7 @@ class Regev(ABC):
             # print(f"=============== mu: {mu}")
 
             if isinstance(gauss_init[1], bool):
-                R = calculate_R(d, qd, N, n, a)
                 sigma = R / math.sqrt(2 * math.pi)
-                self.result.gauss_R = R
-
             else:
                 sigma = gauss_init[1]
 
@@ -1172,7 +1254,7 @@ class Regev(ABC):
             # print(f"=============== sum(amps**2): {sum(amps**2)}")
 
             # NOWE PODEJŚCIE - WYKORZYSTANIE PRZYBLIŻENIA FUNKCJI GAUSSA ZAPROPONOWANEGO PRZEZ MIDASA
-            amps = gaussian_amplitudes(qd)
+            amps = approximated_gaussian_amplitudes(qd, R)
             print(f"=============== sigma: {sigma}")
             print(f"=============== amps: {amps}")
             print(f"=============== amps**2: {amps**2}")
@@ -1260,6 +1342,7 @@ class Regev(ABC):
         x_regs_cubits = []
         qregs_all = circuit.qregs
 
+        # Apply modular exponentiation
         for i in range(d):
             qubits_to_pass = []
             qubits_to_pass += qregs_all[i]
@@ -1272,19 +1355,25 @@ class Regev(ABC):
                 qubits_to_pass
             )
 
+        circuit.barrier(*qregs_all[0:d])
+
+        # Apply QFT gates
+        qft = QFT(qd).to_gate()
+        for i in range(d):
+            circuit.append(
+                qft,
+                qregs_all[i]
+        )
+
+        circuit.barrier()
+
         # Output register measuring
         if measure_output_register:
             y_creg = ClassicalRegister(n, 'yValue')
             circuit.add_register(y_creg)
             circuit.measure(qregs_all[-2], y_creg)
 
-        qft = QFT(qd).to_gate()
-
-        for i in range(d):
-            circuit.append(
-                qft,
-                qregs_all[i]
-        )
+        # circuit.barrier()
 
         if measurement:
             for i in range(d):

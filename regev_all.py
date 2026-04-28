@@ -23,16 +23,22 @@ regev = Regev(shots_num)
 # Ns = [21]
 # Ns = [15]
 # Ns = [39]
-Ns = [57]
+# Ns = [57]
 # Ns = [55]
 # Ns = [85, 91, 95, 119, 143]
-
+Ns = [15, 21, 33, 35, 39]
+# Ns = [15, 21, 33, 35, 39, 51, 55, 57, 65, 69, 77, 85, 91, 95, 119]
+# Ns = [143]
 
 # d and qd parameters combination (for running 'all parts', 'quantum part', 'classical part' and 'drawing quantum circuit')
-# d_qd_list = [[False, True], [False, False]]
+# d_qd_list = [[False, False]]
 # d_qd_list = [[True, True], [False, False]]
 # d_qd_list = [[False, False]]
 d_qd_list = [[True, True]]
+# d_qd_list = [[True, True], [True, False], [False, True], [False, False]]
+
+# d_qd_list = [[True, False]]
+# d_qd_list = [[False, False]]
 
 # Number of combinations of picking up output vectors to create lattice (for running 'all parts', 'classical part')
 number_of_combinations = 100
@@ -47,25 +53,24 @@ type_of_test_array = [1, 2, 3]
 find_pq = True
 
 # Parameter denoting if a decomposed version of quantum circuit should be drawn (drawing quantum circuit)
-decompose = False
+decompose = True
 
 # Parameter initiating initial superposition in gaussian distribution [mu, sigma]
-gauss_init = False
-# gauss_init = [0, False]
+# gauss_init = False
+gauss_init = [0, False]
 # gauss_init = [False, 2**(Ns[0].bit_length() - 3)]
 # gauss_init = [False, False]
 # gauss_init = [0, 11]
 
 # Output registry measuring
-measure_output_register = False
-
+measure_output_register = True
 
 # List of config for file_data_analyzer method to analyze proper file
-# First "True" denotes whether the output register was measured
-# Second "True" denotes whether R parameter was in "big" mode
+# First "True" denotes whether the output register should be measured
+# Second "True" denotes whether R parameter should be in "big" mode
 # If meas_R_list is [0], then method assumes that the data wasn't initialized with Gaussian superposition
-# meas_R_list = [[True, True], [True, False], [False, True], [False, False]]
-meas_R_list = [[False, False]]
+# meas_R_list = [[False, False]]
+meas_R_list = [[True, True]]
 # meas_R_list = [0]
 
 while True:
@@ -89,13 +94,13 @@ while True:
     match choice:
         case 1:
             print("------- Running all algorithm -------")
-            regev.run_all_algorithm(Ns, d_qd_list, number_of_combinations, type_of_test, find_pq, gauss_init, measure_output_register)
+            regev.run_all_algorithm(Ns, d_qd_list, number_of_combinations, type_of_test, find_pq, gauss_init, meas_R_list)
             print("Finished running all algorithm. The results are saved in output_data/regev/all_parts folder")
             continue
 
         case 2:
             print("------- Running quantum part -------")
-            regev.run_quantum_part_data_collection(Ns, d_qd_list, gauss_init, measure_output_register)
+            regev.run_quantum_part_data_collection(Ns, d_qd_list, gauss_init, measure_output_register, meas_R_list)
             print("Finished running quantum part. The results are saved in output_data/regev/quantum_part folder")
             continue
 
@@ -107,7 +112,7 @@ while True:
 
         case 4:
             print("------- Drawing quantum circuit -------")
-            regev.draw_quantum_circuit(Ns, d_qd_list, decompose, gauss_init, measure_output_register)
+            regev.draw_quantum_circuit(Ns, d_qd_list, decompose, gauss_init, meas_R_list)
             print("Finished running drawing quantum circuit")
             continue
 
