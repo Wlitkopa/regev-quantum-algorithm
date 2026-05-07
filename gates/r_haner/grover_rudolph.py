@@ -14,13 +14,13 @@ from utils.typing_ import QRegsSpec
 from utils.approximated_gaussian_amplitudes import approximated_gaussian_amplitudes
 
 
-def grover_rudolph(N: int, n: int, d: int, qd: int, R: int) -> Gate:
+def grover_rudolph(N: int, n: int, d: int, qd: int, amps) -> Gate:
 # def grover_rudolph(N: int, n: int, d: int, qd: int, R: int):
 
     # circuit = QuantumCircuit(qd, qd)
-    circuit = QuantumCircuit(qd)
+    circuit = QuantumCircuit(qd, name=f"GR")
 
-    amps = approximated_gaussian_amplitudes(n, R)
+    # amps = approximated_gaussian_amplitudes(n, R)
     probs = [amp ** 2 for amp in amps]
 
     for i in range(qd):
@@ -68,9 +68,21 @@ def prepare_thetas(bins: int, probs: list):
         cur_i = 2*i
         i_bits = f'{i:0{prev_qubits}b}'
         cur_i_bits = f'{cur_i:0{cur_qubits}b}'
-        print(f"====\ni_bits: {i_bits}\ncur_i_bits: {cur_i_bits}")
-        theta = 2 * np.arccos(np.sqrt(probs_bins_current[cur_i] / probs_bins_previous[i]))
-        thetas.append(theta)
+        # print(f"====\ni_bits: {i_bits}\ncur_i_bits: {cur_i_bits}")
+        # theta = 2 * np.arccos(np.clip(np.sqrt(probs_bins_current[cur_i] / probs_bins_previous[i]), -1.0, 1.0))
+        # theta = 2 * np.arccos(np.clip(np.sqrt(probs_bins_current[cur_i] / probs_bins_previous[i]), 0.0, 1.0))
+        # thetas.append(theta)
+
+        prev = probs_bins_previous[i]
+
+        if prev == 0:
+            theta = 0.0
+            thetas.append(theta)
+
+        else:
+            ratio = probs_bins_current[cur_i] / prev
+            theta = 2*np.arccos(np.clip(np.sqrt(ratio), 0.0, 1.0))
+            thetas.append(theta)
 
     return thetas
 

@@ -1,2 +1,4 @@
 .gitignore
 .venv/
+#qiskit_gpu_test.py
+#qiskit_gpu_cuquantum_test.py

@@ -22,12 +22,13 @@ regev = Regev(shots_num)
 # Numbers N (for running 'all parts', 'quantum part', 'classical part' and 'drawing quantum circuit')
 # Ns = [21]
 # Ns = [15]
-# Ns = [39]
+Ns = [39]
 # Ns = [57]
 # Ns = [55]
 # Ns = [85, 91, 95, 119, 143]
-Ns = [15, 21, 33, 35, 39]
+# Ns = [15, 21, 33, 35, 39]
 # Ns = [15, 21, 33, 35, 39, 51, 55, 57, 65, 69, 77, 85, 91, 95, 119]
+# Ns = [57, 65, 69, 77, 85, 91, 95, 119]
 # Ns = [143]
 
 # d and qd parameters combination (for running 'all parts', 'quantum part', 'classical part' and 'drawing quantum circuit')
@@ -70,8 +71,13 @@ measure_output_register = True
 # Second "True" denotes whether R parameter should be in "big" mode
 # If meas_R_list is [0], then method assumes that the data wasn't initialized with Gaussian superposition
 # meas_R_list = [[False, False]]
+# meas_R_list = [[True, True], [True, False]]
 meas_R_list = [[True, True]]
+# meas_R_list = [[True, False]]
 # meas_R_list = [0]
+
+# Using grover-rudolph gate for initial Gaussian superposition
+use_grover_rudolph = True
 
 while True:
     print("========== REGEV'S ALGORITHM ==========\n")
@@ -94,13 +100,13 @@ while True:
     match choice:
         case 1:
             print("------- Running all algorithm -------")
-            regev.run_all_algorithm(Ns, d_qd_list, number_of_combinations, type_of_test, find_pq, gauss_init, meas_R_list)
+            regev.run_all_algorithm(Ns, d_qd_list, number_of_combinations, type_of_test, find_pq, gauss_init, meas_R_list, use_grover_rudolph)
             print("Finished running all algorithm. The results are saved in output_data/regev/all_parts folder")
             continue
 
         case 2:
             print("------- Running quantum part -------")
-            regev.run_quantum_part_data_collection(Ns, d_qd_list, gauss_init, measure_output_register, meas_R_list)
+            regev.run_quantum_part_data_collection(Ns, d_qd_list, gauss_init, measure_output_register, meas_R_list, use_grover_rudolph)
             print("Finished running quantum part. The results are saved in output_data/regev/quantum_part folder")
             continue
 
@@ -112,7 +118,7 @@ while True:
 
         case 4:
             print("------- Drawing quantum circuit -------")
-            regev.draw_quantum_circuit(Ns, d_qd_list, decompose, gauss_init, meas_R_list)
+            regev.draw_quantum_circuit(Ns, d_qd_list, decompose, gauss_init, meas_R_list, use_grover_rudolph)
             print("Finished running drawing quantum circuit")
             continue
 

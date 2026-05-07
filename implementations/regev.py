@@ -20,6 +20,8 @@ from utils.calculate_R import calculate_R
 from utils.gaussian_amplitudes import gaussian_amplitudes
 from utils.approximated_gaussian_amplitudes import approximated_gaussian_amplitudes
 
+from gates.r_haner.grover_rudolph import grover_rudolph
+
 
 import logging
 import math
@@ -156,8 +158,11 @@ class Regev(ABC):
 
 
     # def draw_quantum_circuit(self, Ns, d_qd_list, decompose=False, gauss_init=False, measure_output_register=False):
-    def draw_quantum_circuit(self, Ns, d_qd_list, decompose=False, gauss_init=False, meas_R_list=[0]):
+    def draw_quantum_circuit(self, Ns, d_qd_list, decompose=False, gauss_init=False, meas_R_list=[0], use_grover_rudolph=True):
         result_files = ""
+        param_R = ""
+        is_R_big = False
+        measuring_output_register = False
         for s in range(len(meas_R_list)):
             # If qubits were initialized using uniform superposition
             if meas_R_list[0] == 0:
@@ -177,9 +182,11 @@ class Regev(ABC):
                 if meas_R_list[s][1]:
                     # big R
                     param_R = 'big'
+                    is_R_big = True
                 else:
                     # small R
                     param_R = 'small'
+                    is_R_big = False
 
             for i in range(len(d_qd_list)):
                 d_ceil_bool = d_qd_list[i][0]
@@ -199,13 +206,16 @@ class Regev(ABC):
                     else:
                         qd_mode = "floor"
 
-                    circuit = self.construct_circuit(N, d_ceil_bool, qd_ceil_bool, gauss_init=gauss_init, measure_output_register=measure_output_register)
+                    circuit = self.construct_circuit(N, d_ceil_bool, qd_ceil_bool, gauss_init=gauss_init, measure_output_register=measure_output_register, is_R_big=is_R_big, use_grover_rudolph=use_grover_rudolph)
 
                     if gauss_init:
                         # path_general = f"images/gauss_approximated/quantum_part/quantum_part_{measuring_output_register}_output_register_measuring_{param_R}_R/{d_mode}_{qd_mode}/n_{self.result.n}_R_{self.result.gauss_R}/N_{N}"
                         # path_decomposed = f"images/gauss_approximated/quantum_part/quantum_part_{measuring_output_register}_output_register_measuring_{param_R}_R/{d_mode}_{qd_mode}/n_{self.result.n}_R_{self.result.gauss_R}/N_{N}"
-                        path_general = f"images/sandbox/N_{N}"
-                        path_decomposed = f"images/sandbox/N_{N}_decomposed"
+                        # path_general = f"images/sandbox/N_{N}"
+                        # path_decomposed = f"images/sandbox/N_{N}_decomposed"
+                        path_general = f"images/gauss_grover_rudolph/quantum_part/quantum_part_{measuring_output_register}_output_register_measuring_{param_R}_R/{d_mode}_{qd_mode}/n_{self.result.n}_R_{self.result.gauss_R}/N_{N}"
+                        path_decomposed = f"images/gauss_grover_rudolph/quantum_part/quantum_part_{measuring_output_register}_output_register_measuring_{param_R}_R/{d_mode}_{qd_mode}/n_{self.result.n}_R_{self.result.gauss_R}/N_{N}"
+
                     else:
                         path_general = f"images/publikacja/general/{d_mode}_{qd_mode}"
                         path_decomposed = f"images/publikacja/decomposed/{d_mode}_{qd_mode}"
@@ -251,7 +261,7 @@ class Regev(ABC):
 
 
     # def run_all_algorithm(self, Ns, d_qd_list, number_of_combinations, type_of_test, find_pq=False, gauss_init=False, measure_output_register=False):
-    def run_all_algorithm(self, Ns, d_qd_list, number_of_combinations, type_of_test, find_pq=False, gauss_init=False, meas_R_list=[0]):
+    def run_all_algorithm(self, Ns, d_qd_list, number_of_combinations, type_of_test, find_pq=False, gauss_init=False, meas_R_list=[0], use_grover_rudolph=True):
 
         for i in range(len(d_qd_list)):
             d_ceil_bool = d_qd_list[i][0]
@@ -277,6 +287,7 @@ class Regev(ABC):
                     if meas_R_list[0] == 0:
                         measure_output_register = False
                         pass
+
                     # If qubits were initialized using Gaussian superposition
                     else:
                         if meas_R_list[s][0]:
@@ -507,7 +518,7 @@ class Regev(ABC):
         return classic_result
 
 
-    def run_quantum_part_data_collection(self, Ns, d_qd_list, gauss_init, measure_output_register=False, meas_R_list=[0]):
+    def run_quantum_part_data_collection(self, Ns, d_qd_list, gauss_init, measure_output_register=False, meas_R_list=[0], use_grover_rudolph=True):
 
         for i in range(len(d_qd_list)):
             d_ceil_bool = d_qd_list[i][0]
@@ -516,29 +527,36 @@ class Regev(ABC):
             for j in range(len(Ns)):
 
                 for s in range(len(meas_R_list)):
-                    if meas_R_list[s][0]:
-                        # measuring output register
-                        measuring_output_register = 'with'
-                        measure_output_register = True
-                    else:
-                        # not measuring output register
-                        measuring_output_register = 'without'
-                        measure_output_register = False
 
-                    if meas_R_list[s][1]:
-                        # big R
-                        param_R = 'big'
-                        is_R_big = True
+                    # If qubits were initialized using uniform superposition
+                    if meas_R_list[0] == 0:
+                        pass
+
+                    # If qubits were initialized using Gaussian superposition
                     else:
-                        # small R
-                        param_R = 'small'
-                        is_R_big = False
+                        if meas_R_list[s][0]:
+                            # measuring output register
+                            measuring_output_register = 'with'
+                            measure_output_register = True
+                        else:
+                            # not measuring output register
+                            measuring_output_register = 'without'
+                            measure_output_register = False
+
+                        if meas_R_list[s][1]:
+                            # big R
+                            param_R = 'big'
+                            is_R_big = True
+                        else:
+                            # small R
+                            param_R = 'small'
+                            is_R_big = False
 
                     N = Ns[j]
                     print(f"\nN: {N}")
 
                     start = time.time()
-                    result = self.get_vectors(N, d_ceil=d_ceil_bool, qd_ceil=qd_ceil_bool, semi_classical=False, gauss_init=gauss_init, measure_output_register=measure_output_register)
+                    result = self.get_vectors(N, d_ceil=d_ceil_bool, qd_ceil=qd_ceil_bool, semi_classical=False, gauss_init=gauss_init, measure_output_register=measure_output_register, use_grover_rudolph=use_grover_rudolph)
                     end = time.time()
                     exec_time = (end - start) * (10 ** 3)
                     converted_time = convert_milliseconds(exec_time)
@@ -580,7 +598,7 @@ class Regev(ABC):
 
                     if gauss_init:
                         # path = f"output_data/gauss/quantum_part/{d_mode}_{qd_mode}/{result.gauss_mu}_{result.gauss_sigma}"
-                        path = f"output_data/gauss_approximated/quantum_part/quantum_part_{measuring_output_register}_output_register_measuring_{param_R}_R/{d_mode}_{qd_mode}/n_{self.result.n}_R_{self.result.gauss_R}/N_{N}"
+                        path = f"output_data/gauss_approximated_rudolph/quantum_part/quantum_part_{measuring_output_register}_output_register_measuring_{param_R}_R/{d_mode}_{qd_mode}/n_{self.result.n}_R_{self.result.gauss_R}/N_{N}"
                     else:
                         path = f"output_data/regev2/quantum_part/{d_mode}_{qd_mode}"
 
@@ -614,7 +632,6 @@ class Regev(ABC):
                     print(f"statevector: {result.state}")
                     print(f"probabilities: {result.probs}")
                     print(f"sum of probabilities: {result.probs_sum}")
-
 
 
     def run_file_data_analyzer(self, Ns, d_qd_list, number_of_combinations, type_of_test_array, meas_R_list=[0]):
@@ -901,9 +918,6 @@ class Regev(ABC):
                         file.close()
 
 
-
-
-
     def run_file_data_analyzer_prev(self, Ns, d_qd_list, number_of_combinations, type_of_test_array=[1]):
 
         # Type of test
@@ -1124,16 +1138,32 @@ class Regev(ABC):
                         self.get_factors(vector, a_root, N)
 
 
-    def get_vectors(self, N: int, d_ceil=False, qd_ceil=False, semi_classical=False, gauss_init=False, measure_output_register=False, is_R_big=False) -> 'RegevResult':
+    def get_vectors(self, N: int, d_ceil=False, qd_ceil=False, semi_classical=False, gauss_init=False, measure_output_register=False, is_R_big=False, use_grover_rudolph=True) -> 'RegevResult':
 
         print("Running quantum part")
 
         start = time.time()
         self._validate_input(N)
 
-        circuit = self.construct_circuit(N, d_ceil, qd_ceil, semi_classical, measurement=True, gauss_init=gauss_init, measure_output_register=measure_output_register, is_R_big=is_R_big)
+        circuit = self.construct_circuit(N, d_ceil, qd_ceil, semi_classical, measurement=True, gauss_init=gauss_init, measure_output_register=measure_output_register, is_R_big=is_R_big, use_grover_rudolph=use_grover_rudolph)
         # aersim = AerSimulator(method="extended_stabilizer")
-        aersim = AerSimulator()
+        # aersim = AerSimulator()
+
+        # Accelerated
+        aersim = AerSimulator(
+            # --- GPU ---
+            device='GPU',
+            cuStateVec_enable=True,  # cuQuantum backend (szybszy)
+
+            # --- CPU (pomocniczo) ---
+            max_parallel_threads=16,  # wątki CPU dla klasycznych operacji
+            max_parallel_experiments=4,  # równoległe eksperymenty na CPU
+
+            # --- Ogólne ---
+            method='statevector',  # albo 'density_matrix', 'stabilizer'
+            # precision='single',  # float32 zamiast float64 – 2x więcej kubitów!
+            shots=1024
+        )
 
         # Display a number of operated qubits
         print("Max number of qubits (local qasm_simulator):", aersim.configuration().n_qubits)
@@ -1206,7 +1236,7 @@ class Regev(ABC):
         return int(measurement, base=2)
 
 
-    def construct_circuit(self, N: int, d_ceil, qd_ceil, semi_classical: bool = False, measurement: bool = True, gauss_init = False, measure_output_register: bool = False, is_R_big=False):
+    def construct_circuit(self, N: int, d_ceil, qd_ceil, semi_classical: bool = False, measurement: bool = True, gauss_init = False, measure_output_register: bool = False, is_R_big=False, use_grover_rudolph=True):
 
         # Tutaj gauss_init jako [mu, sigma]
 
@@ -1230,7 +1260,9 @@ class Regev(ABC):
         # Jeżeli gauss_init = [False, False], to użyte są domyślne parametry
         if gauss_init:
             a = self.generate_a(d, N)
+            print(f"==================== is_R_big: {is_R_big}")
             R = calculate_R(d, qd, N, n, a, is_R_big=is_R_big)
+            print(f"===================== R: {R}")
             self.result.gauss_R = R
 
             if isinstance(gauss_init[0], bool):
@@ -1277,7 +1309,7 @@ class Regev(ABC):
         self.result.exp_register_width = qd
         self.result.measure_output_register = measure_output_register
 
-        return self._construct_circuit(N, n, measurement, d, qd, amps, measure_output_register)
+        return self._construct_circuit(N, n, measurement, d, qd, amps, measure_output_register, use_grover_rudolph)
 
 
     @staticmethod
@@ -1304,7 +1336,7 @@ class Regev(ABC):
             raise ValueError(f'The input N needs to be an odd integer greater than 1. Provided N = {N}.')
 
 
-    def _construct_circuit(self, N: int, n: int, measurement: bool, d: int, qd: int, amps, measure_output_register: bool) -> QuantumCircuit:
+    def _construct_circuit(self, N: int, n: int, measurement: bool, d: int, qd: int, amps, measure_output_register: bool, use_grover_rudolph: bool) -> QuantumCircuit:
 
         # Tutaj nie gauss_init, tylko już amps, żeby ta metoda zajmowała głównie budowaniem obwodu (oprócz "a")
 
@@ -1328,10 +1360,17 @@ class Regev(ABC):
         circuit = QuantumCircuit(*x_qregs, y_qreg, aux_qreg, name=self._get_name(N, d))
 
         if isinstance(amps, np.ndarray):
-            # Initializing input register's qubits gaussian superposition
-            for qreg in x_qregs:
-                # circuit.initialize(amps, [j for j in range(st, en)])
-                circuit.initialize(amps, qreg)
+            if use_grover_rudolph:
+                # Initializing input register's qubits gaussian superposition through grover-rudolph gate
+                grover_rudolph_gate = grover_rudolph(N, n, d, qd, amps)
+                for qreg in x_qregs:
+                    circuit.append(grover_rudolph_gate, qreg)
+                circuit.barrier(*x_qregs)
+            else:
+                # Initializing input register's qubits gaussian superposition through state injection (only simulator)
+                for qreg in x_qregs:
+                    # circuit.initialize(amps, [j for j in range(st, en)])
+                    circuit.initialize(amps, qreg)
         else:
             # Initializing input register's qubits uniform superposition
             for qreg in x_qregs:
