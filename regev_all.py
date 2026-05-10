@@ -17,12 +17,13 @@ from implementations.r_haner import HanerRegev as Regev
 
 # Initiating Regev algorithm class
 shots_num = 128
-regev = Regev(shots_num)
+main_path_dir = "another_test"
+regev = Regev(shots_num, main_path_dir)
 
 # Numbers N (for running 'all parts', 'quantum part', 'classical part' and 'drawing quantum circuit')
 # Ns = [21]
-# Ns = [15]
-Ns = [39]
+Ns = [15]
+# Ns = [39]
 # Ns = [57]
 # Ns = [55]
 # Ns = [85, 91, 95, 119, 143]
@@ -71,8 +72,8 @@ measure_output_register = True
 # Second "True" denotes whether R parameter should be in "big" mode
 # If meas_R_list is [0], then method assumes that the data wasn't initialized with Gaussian superposition
 # meas_R_list = [[False, False]]
-# meas_R_list = [[True, True], [True, False]]
-meas_R_list = [[True, True]]
+meas_R_list = [[True, True], [True, False]]
+# meas_R_list = [[True, True]]
 # meas_R_list = [[True, False]]
 # meas_R_list = [0]
 
@@ -101,19 +102,19 @@ while True:
         case 1:
             print("------- Running all algorithm -------")
             regev.run_all_algorithm(Ns, d_qd_list, number_of_combinations, type_of_test, find_pq, gauss_init, meas_R_list, use_grover_rudolph)
-            print("Finished running all algorithm. The results are saved in output_data/regev/all_parts folder")
+            print("Finished running all algorithm")
             continue
 
         case 2:
             print("------- Running quantum part -------")
             regev.run_quantum_part_data_collection(Ns, d_qd_list, gauss_init, measure_output_register, meas_R_list, use_grover_rudolph)
-            print("Finished running quantum part. The results are saved in output_data/regev/quantum_part folder")
+            print("Finished running quantum part")
             continue
 
         case 3:
             print("------- Running classical part -------")
             regev.run_file_data_analyzer(Ns, d_qd_list, number_of_combinations, type_of_test_array, meas_R_list)
-            print("Finished running classical part. The results are saved in output_data/.../classical_part folder")
+            print("Finished running classical part")
             continue
 
         case 4:

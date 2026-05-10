@@ -58,10 +58,11 @@ getcontext().prec = 1000
 
 class Regev(ABC):
 
-    def __init__(self,  shots) -> None:
+    def __init__(self, shots, main_path_dir) -> None:
         self.shots = shots
         self.result = RegevResult()
         self.vectors = []
+        self.main_path_dir = main_path_dir
 
 
     def draw_gaussian_probabilities(self, path, measure_output_register, param_R):
@@ -213,8 +214,8 @@ class Regev(ABC):
                         # path_decomposed = f"images/gauss_approximated/quantum_part/quantum_part_{measuring_output_register}_output_register_measuring_{param_R}_R/{d_mode}_{qd_mode}/n_{self.result.n}_R_{self.result.gauss_R}/N_{N}"
                         # path_general = f"images/sandbox/N_{N}"
                         # path_decomposed = f"images/sandbox/N_{N}_decomposed"
-                        path_general = f"images/gauss_grover_rudolph/quantum_part/quantum_part_{measuring_output_register}_output_register_measuring_{param_R}_R/{d_mode}_{qd_mode}/n_{self.result.n}_R_{self.result.gauss_R}/N_{N}"
-                        path_decomposed = f"images/gauss_grover_rudolph/quantum_part/quantum_part_{measuring_output_register}_output_register_measuring_{param_R}_R/{d_mode}_{qd_mode}/n_{self.result.n}_R_{self.result.gauss_R}/N_{N}"
+                        path_general = f"images/{self.main_path_dir}/quantum_part/quantum_part_{measuring_output_register}_output_register_measuring_{param_R}_R/{d_mode}_{qd_mode}/n_{self.result.n}_R_{self.result.gauss_R}/N_{N}"
+                        path_decomposed = f"images/{self.main_path_dir}/quantum_part/quantum_part_{measuring_output_register}_output_register_measuring_{param_R}_R/{d_mode}_{qd_mode}/n_{self.result.n}_R_{self.result.gauss_R}/N_{N}"
 
                     else:
                         path_general = f"images/publikacja/general/{d_mode}_{qd_mode}"
@@ -328,6 +329,12 @@ class Regev(ABC):
                                    f"\nvectors: {quantum_result}\n"
                                    f"\nquantum part exec_time (ms): {quantum_result.quantum_exec_time}ms\n"
                                    f"quantum part exec_time: {convert_milliseconds(quantum_result.quantum_exec_time)}\n"
+                                   f"\nqubits_num: {quantum_result.qubits_num}\n"
+                                   f"bits_num: {quantum_result.bits_num}\n"
+                                   f"gates_num: {quantum_result.gates_num}\n"
+                                   f"gates_decomposed_num: {quantum_result.gates_decomposed_num}\n"
+                                   f"depth: {quantum_result.depth}\n"
+                                   f"two_qubits_gates: {quantum_result.two_qubits_gates}\n"
                                    f"\noutput register measured: {quantum_result.measure_output_register}\n"
                                    f"original output data: {quantum_result.output_data_original}\n"
                                    f"\ngauss_init_mu: {quantum_result.gauss_init_mu}\n"
@@ -365,9 +372,9 @@ class Regev(ABC):
                     if gauss_init:
                         directory_general = Path(path)
                         directory_general.mkdir(parents=True, exist_ok=True)
-                        path = f"output_data/gauss_approximated/all_parts/quantum_part/{measuring_output_register}_output_register_measuring_{param_R}_R/{d_mode}_{qd_mode}/n_{quantum_result.n}_R_{quantum_result.gauss_R}"
+                        path = f"output_data/{self.main_path_dir}/all_parts/quantum_part/{measuring_output_register}_output_register_measuring_{param_R}_R/{d_mode}_{qd_mode}/n_{quantum_result.n}_R_{quantum_result.gauss_R}"
                     else:
-                        path = f"output_data/regev2/all_parts/quantum_part/{d_mode}_{qd_mode}"
+                        path = f"output_data/{self.main_path_dir}/all_parts/quantum_part/{d_mode}_{qd_mode}"
 
                     directory = Path(path)
                     directory.mkdir(parents=True, exist_ok=True)
@@ -376,6 +383,9 @@ class Regev(ABC):
 
                     file.write(result_str)
                     file.close()
+
+                    print(f"All algorithm results saved in {path}/N_{N}")
+
 
         return 0
 
@@ -510,6 +520,7 @@ class Regev(ABC):
         classic_result.vector = p_q_vectors[0]
 
         if find_pq:
+            print(f"p_q_vectors: {p_q_vectors}")
             vector = p_q_vectors[0]
             p, q = self.get_factors(vector, a_root, N)
             classic_result.p = p
@@ -556,7 +567,7 @@ class Regev(ABC):
                     print(f"\nN: {N}")
 
                     start = time.time()
-                    result = self.get_vectors(N, d_ceil=d_ceil_bool, qd_ceil=qd_ceil_bool, semi_classical=False, gauss_init=gauss_init, measure_output_register=measure_output_register, use_grover_rudolph=use_grover_rudolph)
+                    result = self.get_vectors(N, d_ceil=d_ceil_bool, qd_ceil=qd_ceil_bool, semi_classical=False, gauss_init=gauss_init, measure_output_register=measure_output_register, is_R_big=is_R_big, use_grover_rudolph=use_grover_rudolph)
                     end = time.time()
                     exec_time = (end - start) * (10 ** 3)
                     converted_time = convert_milliseconds(exec_time)
@@ -574,6 +585,12 @@ class Regev(ABC):
                                   f"\nvectors: {vectors}\n"
                                   f"\nexec_time (ms): {exec_time} ms\n"
                                   f"\nexec_time: {converted_time}\n"
+                                  f"\nqubits_num: {result.qubits_num}\n"
+                                  f"bits_num: {result.bits_num}\n"
+                                  f"gates_num: {result.gates_num}\n"
+                                  f"gates_decomposed_num: {result.gates_decomposed_num}\n"
+                                  f"depth: {result.depth}\n"
+                                  f"two_qubits_gates: {result.two_qubits_gates}\n"
                                   f"\noutput register measured: {result.measure_output_register}\n"
                                   f"original output data: {result.output_data_original}\n"
                                   f"\ngauss_init_mu: {result.gauss_init_mu}\n"
@@ -597,10 +614,10 @@ class Regev(ABC):
                         qd_mode = "floor"
 
                     if gauss_init:
-                        # path = f"output_data/gauss/quantum_part/{d_mode}_{qd_mode}/{result.gauss_mu}_{result.gauss_sigma}"
-                        path = f"output_data/gauss_approximated_rudolph/quantum_part/quantum_part_{measuring_output_register}_output_register_measuring_{param_R}_R/{d_mode}_{qd_mode}/n_{self.result.n}_R_{self.result.gauss_R}/N_{N}"
+                        # path = f"output_data/{self.main_path_dir}/quantum_part/{d_mode}_{qd_mode}/{result.gauss_mu}_{result.gauss_sigma}"
+                        path = f"output_data/{self.main_path_dir}/quantum_part/quantum_part_{measuring_output_register}_output_register_measuring_{param_R}_R/{d_mode}_{qd_mode}/n_{result.n}_R_{result.gauss_R}"
                     else:
-                        path = f"output_data/regev2/quantum_part/{d_mode}_{qd_mode}"
+                        path = f"output_data/{self.main_path_dir}/quantum_part/{d_mode}_{qd_mode}"
 
                     directory = Path(path)
                     directory.mkdir(parents=True, exist_ok=True)
@@ -608,6 +625,8 @@ class Regev(ABC):
                     file = open(f"{path}/N_{N}", "w")
                     file.write(result_str)
                     file.close()
+
+                    print(f"Quantum part results saved in {path}/N_{N}")
 
                     print(f"N: {result.N}")
                     print(f"n: {result.n}")
@@ -629,7 +648,7 @@ class Regev(ABC):
                     print(f"gauss_sigma: {result.gauss_sigma}")
                     print(f"amps: {result.amps}")
 
-                    print(f"statevector: {result.state}")
+                    # print(f"statevector: {result.state}")
                     print(f"probabilities: {result.probs}")
                     print(f"sum of probabilities: {result.probs_sum}")
 
@@ -637,11 +656,11 @@ class Regev(ABC):
     def run_file_data_analyzer(self, Ns, d_qd_list, number_of_combinations, type_of_test_array, meas_R_list=[0]):
 
         # Type of test
-        # 1 - deafult, check number_of_combinations random combinations of vectors return by quantum computer if returns
+        # 1 - default, check number_of_combinations random combinations of vectors return by quantum computer if returns
         # correct powers, with probability according to this returned by quantum computer
         # 2 - check number_of_combinations random combinations of vectors return by quantum computer if returns
         # correct powers, but do not count fact that some vectors are replicated
-        # 3 - check number_of_combinations random combinations of totaly random vectors if returns
+        # 3 - check number_of_combinations random combinations of totally random vectors if returns
         # correct powers
         for t in range(len(type_of_test_array)):
             type_of_test = type_of_test_array[t]
@@ -694,11 +713,12 @@ class Regev(ABC):
                             # gauss_params_dir = "0_2866.0013424038925"
                             file_name = None
 
-                            file_dir = f"output_data/gauss/quantum_part_{measuring_output_register}_output_register_measuring_{param_R}_R/{d_mode}_{qd_mode}"
+                            file_dir = f"output_data/{self.main_path_dir}/quantum_part/quantum_part_{measuring_output_register}_output_register_measuring_{param_R}_R/{d_mode}_{qd_mode}"
                             print(f"file_dir: {file_dir}")
 
                             root_dir = Path(file_dir)
                             target = f"N_{Ns[l]}"
+                            print(f"target: {target}")
                             for p in root_dir.rglob(target):
                                 print("Found:", p)
                                 file_name = f"{p}"
@@ -712,7 +732,7 @@ class Regev(ABC):
                                 continue
 
 
-                            file_name = f"output_data/gauss/quantum_part_{measuring_output_register}_output_register_measuring_{param_R}_R/{d_mode}_{qd_mode}/{gauss_params_dir}/N_{N}"
+                            file_name = f"output_data/{self.main_path_dir}/quantum_part/quantum_part_{measuring_output_register}_output_register_measuring_{param_R}_R/{d_mode}_{qd_mode}/{gauss_params_dir}/N_{N}"
                             if not os.path.exists(file_name):
                                 print(f"File {file_name} doesn't exists")
                                 print(f"os.getcwd(): {os.getcwd()}")
@@ -721,7 +741,7 @@ class Regev(ABC):
                         else:
                             print(f"================ UNIFORM ================")
 
-                            file_name = f"output_data/regev/quantum_part/{d_mode}_{qd_mode}/N_{N}"
+                            file_name = f"output_data/{self.main_path_dir}/quantum_part/{d_mode}_{qd_mode}/N_{N}"
 
                             if not os.path.exists(file_name):
                                 print(f"File {file_name} doesn't exists")
@@ -906,16 +926,18 @@ class Regev(ABC):
 
                         # If qubits were initialized using uniform superposition
                         if meas_R_list[0] == 0:
-                            dir_path = f"output_data/regev/classical_part/file_analysis_all_types/{type_dir}/{d_mode}_{qd_mode}"
+                            dir_path = f"output_data/{self.main_path_dir}/classical_part/file_analysis_all_types/{type_dir}/{d_mode}_{qd_mode}"
                         # If qubits were initialized using Gaussian superposition
                         else:
-                            dir_path = f"output_data/gauss/classical_part/file_analysis_all_types_{measuring_output_register}_output_register_measuring_{param_R}_R/{type_dir}/{d_mode}_{qd_mode}/{gauss_params_dir}"
-                            directory = Path(dir_path)
-                            directory.mkdir(parents=True, exist_ok=True)
+                            dir_path = f"output_data/{self.main_path_dir}/classical_part/file_analysis_all_types_{measuring_output_register}_output_register_measuring_{param_R}_R/{type_dir}/{d_mode}_{qd_mode}/{gauss_params_dir}"
+
+                        directory = Path(dir_path)
+                        directory.mkdir(parents=True, exist_ok=True)
 
                         file = open(f"{dir_path}/N_{N}", "w")
                         file.write(result)
                         file.close()
+                        print(f"Classical part results saved in {dir_path}/N_{N}")
 
 
     def run_file_data_analyzer_prev(self, Ns, d_qd_list, number_of_combinations, type_of_test_array=[1]):
@@ -952,7 +974,7 @@ class Regev(ABC):
 
                     N = Ns[l]
                     print(f"\nN: {N}")
-                    file_name = f"output_data/gauss/quantum_part_without_output_registry_measuring_big_R/{d_mode}_{qd_mode}/{gauss_params_dir}/N_{N}"
+                    file_name = f"output_data/{self.main_path_dir}/quantum_part_without_output_registry_measuring_big_R/{d_mode}_{qd_mode}/{gauss_params_dir}/N_{N}"
                     if not os.path.exists(file_name):
                         print(f"File {file_name} doesn't exists")
                         print(f"os.getcwd(): {os.getcwd()}")
@@ -1126,9 +1148,10 @@ class Regev(ABC):
                     elif type_of_test == 3:
                         type_dir = "type_3"
 
-                    file = open(f"output_data/gauss/classical_part/file_analysis_all_types_without_output_register_meas_big_R/{type_dir}/{d_mode}_{qd_mode}/{gauss_params_dir}/N_{N}", "w")
+                    file = open(f"output_data/{self.main_path_dir}/classical_part/file_analysis_all_types_without_output_register_meas_big_R/{type_dir}/{d_mode}_{qd_mode}/{gauss_params_dir}/N_{N}", "w")
                     file.write(result)
                     file.close()
+
 
                     # This code is temporary, needs to be deleted
                     if len(p_q_vectors) > 0:
@@ -1148,6 +1171,21 @@ class Regev(ABC):
         circuit = self.construct_circuit(N, d_ceil, qd_ceil, semi_classical, measurement=True, gauss_init=gauss_init, measure_output_register=measure_output_register, is_R_big=is_R_big, use_grover_rudolph=use_grover_rudolph)
         # aersim = AerSimulator(method="extended_stabilizer")
         # aersim = AerSimulator()
+
+        print(f"Kubity:             {circuit.num_qubits}")
+        print(f"Kubity decompose:   {circuit.decompose().num_qubits}")
+        print(f"Bity klasyczne:     {circuit.num_clbits}")
+        print(f"Bramki (łącznie):   {circuit.size()}")
+        print(f"Bramki decomposed (łącznie):   {circuit.decompose().size()}")
+        print(f"Głębokość obwodu:   {circuit.depth()}")
+        print(f"Bramki 2-kubitowe:  {circuit.num_nonlocal_gates()}")
+
+        self.result.qubits_num = circuit.num_qubits
+        self.result.bits_num = circuit.num_clbits
+        self.result.gates_num = circuit.size()
+        self.result.gates_decomposed_num = circuit.decompose().size()
+        self.result.depth = circuit.depth()
+        self.result.two_qubits_gates = circuit.num_nonlocal_gates()
 
         # Accelerated
         aersim = AerSimulator(
@@ -1488,9 +1526,15 @@ class Regev(ABC):
                        f"Backend name: {backend.name}\n"
                        f" > Counts: {result[0].data.meas.get_counts()}")
 
-        file = open(f"output_data/regev/quantum_computer/{d_mode}_{qd_mode}/N_{N}", "w")
+        dir_path = f"output_data/{self.main_path_dir}/quantum_computer/{d_mode}_{qd_mode}"
+        directory = Path(dir_path)
+        directory.mkdir(parents=True, exist_ok=True)
+
+        file = open(f"{dir_path}/N_{N}", "w")
         file.write(result_str)
         file.close()
+
+        print(f"Quantum part (from quantum computer) results saved in {dir_path}/N_{N}")
 
 
     @abstractmethod

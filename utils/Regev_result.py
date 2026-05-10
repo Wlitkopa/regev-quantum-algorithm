@@ -46,6 +46,13 @@ class RegevResult:
         self._measure_output_register = False
         self._output_data_original = []
 
+        self._qubits_num = 0
+        self._bits_num = 0
+        self._gates_num = 0
+        self._gates_decomposed_num = 0
+        self._depth = 0
+        self._two_qubits_gates = 0
+
 
     @property
     def order(self) -> Optional[int]:
@@ -334,3 +341,53 @@ class RegevResult:
     @output_data_original.setter
     def output_data_original(self, value: []) -> None:
         self._output_data_original = value
+
+    @property
+    def qubits_num(self) -> int:
+        return self._qubits_num
+
+    @qubits_num.setter
+    def qubits_num(self, value: int) -> None:
+        self._qubits_num = value
+
+
+    @property
+    def bits_num(self) -> int:
+        return self._bits_num
+
+    @bits_num.setter
+    def bits_num(self, value: int) -> None:
+        self._bits_num = value
+
+    @property
+    def gates_num(self) -> int:
+        return self._gates_num
+
+    @gates_num.setter
+    def gates_num(self, value: int) -> None:
+        self._gates_num = value
+
+    @property
+    def gates_decomposed_num(self) -> int:
+        return self._gates_decomposed_num
+
+    @gates_decomposed_num.setter
+    def gates_decomposed_num(self, value: int) -> None:
+        self._gates_decomposed_num = value
+
+    @property
+    def depth(self) -> int:
+        return self._depth
+
+    @depth.setter
+    def depth(self, value: int) -> None:
+        self._depth= value
+
+    @property
+    def two_qubits_gates(self) -> int:
+        return self._two_qubits_gates
+
+    @two_qubits_gates.setter
+    def two_qubits_gates(self, value: int) -> None:
+        self._two_qubits_gates = value
+
