@@ -52,6 +52,10 @@ class RegevResult:
         self._gates_decomposed_num = 0
         self._depth = 0
         self._two_qubits_gates = 0
+        self._success_perc_mod_N_1 = 0
+        self._success_perc_p_q = 0
+        self._p_q_vectors = []
+
 
 
     @property
@@ -391,3 +395,27 @@ class RegevResult:
     def two_qubits_gates(self, value: int) -> None:
         self._two_qubits_gates = value
 
+
+    @property
+    def success_perc_mod_N_1(self) -> int:
+        return self._success_perc_mod_N_1
+
+    @success_perc_mod_N_1.setter
+    def success_perc_mod_N_1(self, value: int) -> None:
+        self._success_perc_mod_N_1 = value
+
+    @property
+    def success_perc_p_q(self) -> int:
+        return self._success_perc_p_q
+
+    @success_perc_p_q.setter
+    def success_perc_p_q(self, value: int) -> None:
+        self._success_perc_p_q = value
+
+    @property
+    def p_q_vectors(self) -> []:
+        return self._p_q_vectors
+
+    @p_q_vectors.setter
+    def p_q_vectors(self, value: []) -> None:
+        self._p_q_vectors = value

@@ -312,7 +312,7 @@ class Regev(ABC):
                     print(f"\nN: {N}")
                     start = time.time()
                     quantum_result = self.get_vectors(N, d_ceil=d_ceil_bool, qd_ceil=qd_ceil_bool, semi_classical=False, gauss_init=gauss_init, measure_output_register=measure_output_register, is_R_big=is_R_big)
-                    classic_result = self.run_classical_part(number_of_combinations, N, quantum_result.n, quantum_result.number_of_primes, quantum_result.exp_register_width, quantum_result.squared_primes, quantum_result.output_data, type_of_test, find_pq)
+                    classic_result = self.run_classical_part(number_of_combinations, N, quantum_result.n, quantum_result.number_of_primes, quantum_result.exp_register_width, quantum_result.squared_primes, quantum_result.output_data, type_of_test, find_pq, meas_R_list)
                     end = time.time()
                     exec_time = (end - start) * 1000
                     converted_time = convert_milliseconds(exec_time)
@@ -355,9 +355,15 @@ class Regev(ABC):
                                    f"delta_inv: {classic_result.delta_inv}\n"
                                    f"type_of_test: {type_of_test}\n"
                                    f"number_of_combinations: {number_of_combinations}\n"
+                                   f"\nPer cent of combinations (with positive values of result vector) that gives % N = 1: {classic_result.success_perc_mod_N_1}%\n"
+                                   f"Per cent of combinations (with positive values of result vector) that give p and q: {classic_result.success_perc_p_q}%\n"
+                                   f"Vectors that gives p and q: {classic_result.p_q_vectors}"
                                    f"\nclassical part exec_time (ms): {classic_result.classical_exec_time}ms\n"
                                    f"classical part exec_time: {convert_milliseconds(classic_result.classical_exec_time)}\n")
-
+                    print(
+                        f'Per cent of combinations (with positive values of result vector) that gives % N = 1: {classic_result.success_perc_mod_N_1}%')
+                    print(
+                        f'Per cent of combinations (with positive values of result vector) that give p and q: {classic_result.success_perc_p_q}%')
 
                     result_str += f"\n=============== ALL TOGETHER ===============\n"
 
@@ -370,8 +376,6 @@ class Regev(ABC):
 
 
                     if gauss_init:
-                        directory_general = Path(path)
-                        directory_general.mkdir(parents=True, exist_ok=True)
                         path = f"output_data/{self.main_path_dir}/all_parts/quantum_part/{measuring_output_register}_output_register_measuring_{param_R}_R/{d_mode}_{qd_mode}/n_{quantum_result.n}_R_{quantum_result.gauss_R}"
                     else:
                         path = f"output_data/{self.main_path_dir}/all_parts/quantum_part/{d_mode}_{qd_mode}"
@@ -390,7 +394,177 @@ class Regev(ABC):
         return 0
 
 
-    def run_classical_part(self, number_of_combinations, N, n, d, qd, a, output_data, type_of_test, find_pq=False):
+
+
+    def run_classical_part(self, number_of_combinations, N, n, d, qd, a, output_data, type_of_test, find_pq=False, meas_R_list=[0]):
+
+        print("running classical part")
+
+        print(f"output_data: {output_data}")
+
+        classic_result = RegevResult()
+        vectors = []
+        p_q_vectors = []
+        a_root = []
+
+        start = time.time()
+
+        for a_ in a:
+            a_root.append(int(math.sqrt(a_)))
+
+        total_number_of_vectors = 0
+        for i in range(len(output_data)):
+            duplicate = output_data[i][2]
+            if type_of_test == 1:
+                for j in range(min(d + 4, duplicate)):
+                    vectors.append(output_data[i][0])
+            if type_of_test == 2:
+                vectors.append(output_data[i][0])
+            if type_of_test == 3:
+                total_number_of_vectors += duplicate
+
+        if type_of_test == 3:
+            for i in range(total_number_of_vectors):
+                v = []
+                for j in range(d):
+                    v.append(randint(0, 2 ** qd))
+                vectors.append(v)
+        if type_of_test == 2 and len(vectors) < d + 4:
+            print(f"\nToo little variety of vectors for number {N}\n")
+            return -1
+
+        # calculate parameters necessary to create lattice
+        m = math.ceil(n / d) + 2
+        powers = []
+        for i in range(m):
+            powers.append(i)
+
+        # This fragment of code allows to find exact value of T
+        # T = N
+        # for p in itertools.product(powers, repeat=d):
+        #     if p == (0,) * d:
+        #         continue
+        #     T_tmp = 1
+        #     v_len_tmp = 1
+        #     for i in range(d):
+        #         T_tmp *= pow(a_root[i], p[i], N)
+        #         v_len_tmp += pow(p[i], 2)
+        #     v_len_tmp = math.ceil(math.sqrt(v_len_tmp))
+        #     if T_tmp % N == 1 and v_len_tmp < T:
+        #         T = v_len_tmp
+
+        # This fragment of code estimate the value of T
+        T = math.ceil(math.exp(n / (2 * d)))
+        n = math.ceil(math.log(N, 2))
+
+        # Stara wersja R
+        # R = math.ceil(6 * T * math.sqrt((d + 5) * (2 * d) + 4) * (d / 2) * (2 ** ((qd + 1) / (d + 4) + d + 2)))
+        # Nowa wersja R
+        # R = math.ceil(6 * T * math.sqrt((d + 5) * (2 * d + 4) * (d / 2)) * (2 ** ((n + 1) / (d + 4) + d + 2)))
+
+
+        # If qubits were initialized using uniform superposition
+        if meas_R_list[0] != 0:
+            # If R is "big"
+            if meas_R_list[0][1]:
+                R = math.ceil(6 * T * math.sqrt((d + 5) * (2 * d + 4) * (d / 2)) * (2 ** ((n + 1) / (d + 4) + d + 2)))
+            # If R is "small"
+            else:
+                R = math.sqrt(2 * d) + 1
+        else:
+            R = math.ceil(6 * T * math.sqrt((d + 5) * (2 * d + 4) * (d / 2)) * (2 ** ((n + 1) / (d + 4) + d + 2)))
+
+
+        t = 1 + math.ceil(math.log(math.sqrt(d) * R, 2))
+        delta = math.sqrt(d / 2) / R
+        delta_inv = math.ceil(R / math.sqrt(d / 2))
+        print(f"Parameters:\nN: {N}\nR: {R}\nT: {T}\nt: {t}\ndelta: {delta}\ndelta_inv: {delta_inv}")
+
+        classic_result.R = R
+        classic_result.T = T
+        classic_result.t = t
+        classic_result.delta = delta
+        classic_result.delta_inv = delta_inv
+
+        # create block of lattice
+        I_d = np.identity(d)
+        zeros_d_d4 = np.zeros((d, d + 4))
+        I_d4_d4_delta = delta_inv * np.identity(d + 4)
+
+        success1 = 0
+        success2 = 0
+
+        for _ in range(number_of_combinations):
+            # get random combinations from vectors
+            shuffle(vectors)
+            w_d4_d = vectors[:d + 4]
+
+            M = np.block([
+                [I_d, zeros_d_d4],
+                [np.matrix(w_d4_d) * (delta_inv / (2 ** t)), I_d4_d4_delta],
+            ])
+            np.set_printoptions(precision=6, suppress=True)
+
+            # make LLL algorithm on columns of lattice M
+            M_LLL = olll.reduction(M.transpose().tolist(), 0.75)
+            M_LLL_t = np.matrix(M_LLL).transpose().tolist()
+
+            # create flags to count different solutions from lattice once
+            s1 = 0
+            s2 = 0
+
+            # check if given combinations of vectors returns correct solution
+            break_flag = 0
+            for i in range(0, 2*d + 4):
+                square = 1
+                f = 0
+                temp_vector = []
+                for j in range(d):
+                    square *= pow(a_root[j], (M_LLL_t[i][j]), N)
+                    square %= N
+                    temp_vector.append(M_LLL_t[i][j])
+                    # print(f"square prev: {square}")
+                if (square * square) % N == 1 and f == 0 and temp_vector != d*[0]:
+                    s1 = 1
+                    # print(f"square: {square}")
+                    if square != N - 1 and square != 1:
+                        s2 = 1
+                        p_q_vectors.append(temp_vector)
+                        break_flag = 1
+                        break
+                if break_flag == 1:
+                    break
+
+            if s1 == 1:
+                success1 += 1
+
+            if s2 == 1:
+                success2 += 1
+
+        end = time.time()
+        exec_time = (end - start) * (10 ** 3)
+        classic_result.classical_exec_time = exec_time
+        print(f"p_q_vectors: {p_q_vectors}")
+        classic_result.vector = p_q_vectors[0]
+        classic_result.p_q_vectors = p_q_vectors
+
+        classic_result.success_perc_mod_N_1 = (success1 * 100 / number_of_combinations)
+        classic_result.success_perc_p_q = (success2 * 100 / number_of_combinations)
+        print(f'Per cent of combinations (with positive values of result vector) that gives % N = 1: {classic_result.success_perc_mod_N_1}%')
+        print(f'Per cent of combinations (with positive values of result vector) that give p and q: {classic_result.success_perc_p_q}%')
+
+        if find_pq:
+            print(f"p_q_vectors: {p_q_vectors}")
+            vector = p_q_vectors[0]
+            p, q = self.get_factors(vector, a_root, N)
+            classic_result.p = p
+            classic_result.q = q
+
+        return classic_result
+
+
+
+    def run_classical_part_prev(self, number_of_combinations, N, n, d, qd, a, output_data, type_of_test, find_pq=False):
 
         print("running classical part")
 
@@ -821,9 +995,9 @@ class Regev(ABC):
                                 #         T = v_len_tmp
 
                                 # This fragment of code estimate the value of T
-
                                 T = math.ceil(math.exp(n/(2*d)))
                                 n = math.ceil(math.log(N, 2))
+
                                 # If qubits were initialized using uniform superposition
                                 if meas_R_list[0] != 0:
                                     # If R is "big"
@@ -834,6 +1008,7 @@ class Regev(ABC):
                                         R = math.sqrt(2 * d) + 1
                                 else:
                                     R = math.ceil(6 * T * math.sqrt((d + 5) * (2 * d + 4) * (d / 2)) * (2 ** ((n + 1) / (d + 4) + d + 2)))
+
                                 t = 1 + math.ceil(math.log(math.sqrt(d) * R, 2))
                                 delta = math.sqrt(d / 2) / R
                                 delta_inv = math.ceil(R / math.sqrt(d / 2))
