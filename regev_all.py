@@ -22,10 +22,10 @@ regev = Regev(shots_num, main_path_dir)
 
 # Numbers N (for running 'all parts', 'quantum part', 'classical part' and 'drawing quantum circuit')
 # Ns = [21]
-Ns = [15]
+# Ns = [15]
 # Ns = [39]
 # Ns = [57]
-# Ns = [55]
+Ns = [143]
 # Ns = [85, 91, 95, 119, 143]
 # Ns = [15, 21, 33, 35, 39]
 # Ns = [15, 21, 33, 35, 39, 51, 55, 57, 65, 69, 77, 85, 91, 95, 119]

@@ -1369,13 +1369,17 @@ class Regev(ABC):
             cuStateVec_enable=True,  # cuQuantum backend (szybszy)
 
             # --- CPU (pomocniczo) ---
-            max_parallel_threads=16,  # wątki CPU dla klasycznych operacji
+            max_parallel_threads=32,  # wątki CPU dla klasycznych operacji
             max_parallel_experiments=4,  # równoległe eksperymenty na CPU
 
             # --- Ogólne ---
             method='statevector',  # albo 'density_matrix', 'stabilizer'
-            # precision='single',  # float32 zamiast float64 – 2x więcej kubitów!
-            shots=1024
+            precision='single',  # float32 zamiast float64 – 2x więcej kubitów!
+            shots=self.shots,
+    
+            # MPI – podział wektora stanów między węzły
+            blocking_enable=True,
+            blocking_qubits=30,  # ile kubitów obsługuje jeden węzeł
         )
 
         # Display a number of operated qubits
