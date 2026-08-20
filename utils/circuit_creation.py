@@ -1,4 +1,4 @@
-from qiskit import QuantumRegister, QuantumCircuit
+from qiskit import QuantumCircuit, QuantumRegister
 
 from utils.typing_ import Name, QRegsSpec
 

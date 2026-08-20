@@ -1,6 +1,33 @@
-[project]
-name = "regev-quantum-algorithm"
-version = "0.1.0"
-description = "Add your description here"
-requires-python = ">=3.11"
-dependencies = []
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+exclude = [
+    ".venv",
+    ".idea",
+    "images",
+    "output_data",
+    "__pycache__",
+    # Upstream gate library — kept close to the original repo's formatting.
+    "gates/haner",
+    "gates/r_haner/adder.py",
+    "gates/r_haner/carry.py",
+    "gates/r_haner/cccx.py",
+    "gates/r_haner/comparator.py",
+    "gates/r_haner/constant_adder.py",
+    "gates/r_haner/constant_modulo_adder.py",
+    "gates/r_haner/constant_modulo_multiplier.py",
+    "gates/r_haner/incrementer.py",
+    "gates/r_haner/modular_exponentiation.py",
+    "utils/plots",
+    # Upstream Shor code — kept in the tree for parity with the original repo.
+    "implementations/shor.py",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I"]
+ignore = [
+    "E741",  # ambiguous single-letter names (N, R, T, d, etc. mirror the paper)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"utils/plots/**" = ["ALL"]

@@ -1,35 +1,25 @@
+"""Strict Gaussian amplitudes (retained for comparison with the approximated form)."""
+
 import numpy as np
 
-def gaussian_amplitudes(n_qubits: int, mu=None, sigma=None):
-    """Returns normalized amplitudes for indexes 0..2^n-1."""
+
+def gaussian_amplitudes(
+    n_qubits: int, mu: float | None = None, sigma: float | None = None
+) -> np.ndarray:
+    """Normalised amplitudes for a Gaussian over ``[0, 2^n_qubits)``.
+
+    When ``mu`` or ``sigma`` are ``None`` the defaults ``(dim - 1)/2`` and
+    ``dim/8`` are used — reasonable when no domain-specific value is available.
+    """
     dim = 2 ** n_qubits
-    # print(f"dim: {dim}")
     x = np.arange(dim, dtype=float)
-    # print(f"x: {x}")
     if mu is None:
-        mu = (dim - 1) / 2.0                     # mu
+        mu = (dim - 1) / 2.0
     if sigma is None:
-        sigma = dim / 8.0                        # sigma
+        sigma = dim / 8.0
 
-    print(f"mu: {mu}")
-    print(f"sigma: {sigma}")
-
-    # amplitudes proportional to e^{-(x-mu)^2 / (2*sigma^2)}
     amp = np.exp(-0.5 * ((x - mu) / sigma) ** 2)
-
-    # print(f"amp: {amp}")
-
-    # normalization to sum(|amp|^2) = 1
     norm = np.linalg.norm(amp)
-    # print(f"norm: {norm}")
     if norm == 0:
         raise ValueError("Zero vector: choose different mu/sigma.")
-    amp = amp / norm
-    # print(f"amp: {amp}")
-    # print(f"amp**2: {amp**2}")
-    # print(f"sum(amp**2): {sum(amp**2)}")
-    return amp
-
-
-# gaussian_amplitudes(4)
-
+    return amp / norm

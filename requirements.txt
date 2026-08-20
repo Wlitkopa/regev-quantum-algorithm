@@ -1,7 +1,6 @@
-qiskit~=1.2.4
-#qiskit-aer~=0.15.1
-qiskit-aer-gpu~=0.15.1
-cuquantum-python~=26.3.2
+qiskit==1.2.4
+qiskit-aer-gpu==0.15.1
+cuquantum-python-cu12~=26.3.2
 
 numpy~=1.26.4
 scipy

@@ -1,23 +1,17 @@
-import time
-from typing import Union, Tuple, Optional
-
-import numpy as np
-from abc import ABC, abstractmethod
-from itertools import chain
-
-from qiskit import QuantumRegister, AncillaRegister, QuantumCircuit, ClassicalRegister
-
-from qiskit.circuit import Instruction
-from qiskit.circuit.library import QFT
-
 import logging
 import math
+import time
+from abc import ABC, abstractmethod
 from fractions import Fraction
+from itertools import chain
+from typing import Optional, Tuple, Union
 
-from qiskit.providers import  Backend
-from qiskit_aer import AerSimulator
-from qiskit_ibm_runtime import QiskitRuntimeService
+import numpy as np
+from qiskit import AncillaRegister, ClassicalRegister, QuantumCircuit, QuantumRegister
+from qiskit.circuit import Instruction
+from qiskit.circuit.library import QFT
 from qiskit.transpiler.preset_passmanagers import generate_preset_pass_manager
+from qiskit_aer import AerSimulator
 
 #from qiskit.utils.validation import validate_min
 
@@ -66,11 +60,11 @@ class Shor(ABC):
         aersim = AerSimulator()
         pm = generate_preset_pass_manager(backend=aersim, optimization_level=3)
         isa_qc = pm.run(circuit)
-  
+
         counts = aersim.run(isa_qc,shots=self.shots).result().get_counts(0)
       #  counts = result.get_counts(0)
        # print('Counts(ideal):', counts)
-     
+
         #counts=self.sampler().run(circuit, shots=self.shots).result().quasi_dists[0].binary_probabilities()
 
         result.total_counts = len(counts)
@@ -249,7 +243,7 @@ class Shor(ABC):
 
     @abstractmethod
     def _get_aux_register_size(self, n: int) -> int:
-        raise NotImplemented
+        raise NotImplementedError
 
     def _get_name(self, a: int, N: int) -> str:
         return f'{self._prefix} Shor(a={a}, N={N})'
@@ -257,15 +251,15 @@ class Shor(ABC):
     @property
     @abstractmethod
     def _prefix(self) -> str:
-        raise NotImplemented
+        raise NotImplementedError
 
     @abstractmethod
     def _modular_exponentiation_gate(self, constant: int, N: int, n: int) -> Instruction:
-        raise NotImplemented
+        raise NotImplementedError
 
     @abstractmethod
     def _modular_multiplication_gate(self, constant: int, N: int, n: int) -> Instruction:
-        raise NotImplemented
+        raise NotImplementedError
 
 
 class ShorResult():
