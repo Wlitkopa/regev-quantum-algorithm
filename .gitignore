@@ -1,4 +1,26 @@
-.gitignore
+# Virtualenvs
 .venv/
-#qiskit_gpu_test.py
-#qiskit_gpu_cuquantum_test.py
+venv/
+
+# IDEs
+.idea/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Notebooks
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Research artifacts (generated locally, not tracked)
+images/
+output_data/
