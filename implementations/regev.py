@@ -76,6 +76,7 @@ class Regev(ABC):
         gauss_init=False,
         meas_R_list: Sequence = (0,),
         use_grover_rudolph: bool = True,
+        measure_output_register: bool = False,
     ) -> int:
         for d_ceil, qd_ceil in d_qd_list:
             d_mode = cfg_mod.mode_name(d_ceil)
@@ -83,6 +84,9 @@ class Regev(ABC):
 
             for N in Ns:
                 for cfg in self._iter_meas_configs(meas_R_list):
+                    measure_out = (
+                        cfg.measure_output_register if cfg else measure_output_register
+                    )
                     print(f"\nN: {N}")
                     start = time.time()
                     quantum_result = self.get_vectors(
@@ -90,7 +94,7 @@ class Regev(ABC):
                         d_ceil=d_ceil,
                         qd_ceil=qd_ceil,
                         gauss_init=gauss_init,
-                        measure_output_register=(cfg.measure_output_register if cfg else False),
+                        measure_output_register=measure_out,
                         is_R_big=(cfg.is_R_big if cfg else False),
                         use_grover_rudolph=use_grover_rudolph,
                     )
@@ -108,6 +112,19 @@ class Regev(ABC):
                     )
                     exec_time = (time.time() - start) * 1000
 
+                    dir_ = paths.all_parts_dir(
+                        self.main_path_dir, d_mode, qd_mode,
+                        quantum_result.n, quantum_result.gauss_R, cfg, gauss_init,
+                    )
+                    if classic_result is None:
+                        msg = (
+                            f"Too little variety of vectors for number {N} "
+                            f"(type_of_test={type_of_test}). Skipping classical part."
+                        )
+                        file_path = output.write_result(dir_, N, msg + "\n")
+                        print(f"{msg}\nNote saved in {file_path}")
+                        continue
+
                     print(
                         "Per cent of combinations that gives % N = 1: "
                         f"{classic_result.success_perc_mod_N_1}%"
@@ -120,10 +137,6 @@ class Regev(ABC):
                     text = output.format_all_result(
                         quantum_result, classic_result, type_of_test,
                         number_of_combinations, exec_time, find_pq,
-                    )
-                    dir_ = paths.all_parts_dir(
-                        self.main_path_dir, d_mode, qd_mode,
-                        quantum_result.n, quantum_result.gauss_R, cfg, gauss_init,
                     )
                     file_path = output.write_result(dir_, N, text)
                     print(f"All algorithm results saved in {file_path}")
@@ -186,29 +199,33 @@ class Regev(ABC):
         gauss_init=False,
         meas_R_list: Sequence = (0,),
         use_grover_rudolph: bool = True,
+        measure_output_register: bool = False,
     ) -> None:
         for cfg in self._iter_meas_configs(meas_R_list):
+            measure_out = cfg.measure_output_register if cfg else measure_output_register
             for d_ceil, qd_ceil in d_qd_list:
                 d_mode = cfg_mod.mode_name(d_ceil)
                 qd_mode = cfg_mod.mode_name(qd_ceil)
                 for N in Ns:
                     circuit = self.construct_circuit(
                         N, d_ceil, qd_ceil, gauss_init=gauss_init,
-                        measure_output_register=(cfg.measure_output_register if cfg else False),
+                        measure_output_register=measure_out,
                         is_R_big=(cfg.is_R_big if cfg else False),
                         use_grover_rudolph=use_grover_rudolph,
                     )
                     general_dir, decomposed_dir = paths.circuit_image_dirs(
                         self.main_path_dir, d_mode, qd_mode,
-                        self.result.n, self.result.gauss_R, cfg, gauss_init,
+                        self.result.n, self.result.gauss_R, N, cfg, gauss_init,
                     )
                     reported: list[str] = []
                     if decompose:
                         f = drawing.save_circuit_image(
-                            circuit, f"{decomposed_dir}/N_{N}_decomposed", decompose=True
+                            circuit, f"{decomposed_dir}/decomposed", decompose=True
                         )
                         reported.append(f)
-                    f = drawing.save_circuit_image(circuit, f"{general_dir}/N_{N}", decompose=False)
+                    f = drawing.save_circuit_image(
+                        circuit, f"{general_dir}/general", decompose=False
+                    )
                     reported.append(f)
                     if gauss_init:
                         # Store the Gaussian-input plots alongside the general circuit image.

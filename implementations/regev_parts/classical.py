@@ -135,14 +135,17 @@ def run_classical_part(
     type_of_test: int,
     find_pq: bool = False,
     meas_R_list: Sequence = (0,),
-) -> RegevResult:
+) -> Optional[RegevResult]:
+    """Return a populated :class:`RegevResult`, or ``None`` if the quantum step
+    did not produce enough distinct vectors to run the lattice reduction.
+    """
     result = RegevResult()
     a_root = [int(math.sqrt(a_)) for a_ in a]
 
     vectors = build_vectors(output_data, d, qd, type_of_test)
     if vectors is None:
         print(f"\nToo little variety of vectors for number {N}\n")
-        return -1  # type: ignore[return-value]
+        return None
 
     start = time.time()
     params = compute_lattice_params(N, n, d, meas_R_list)

@@ -59,12 +59,12 @@ def all_parts_dir(
     """Directory for the ``run_all_algorithm`` (quantum + classical) writeup."""
     if gauss_init and cfg is not None:
         path = (
-            f"output_data/{main_path_dir}/all_parts/quantum_part/"
+            f"output_data/{main_path_dir}/all_parts/"
             f"{cfg.measuring_output_register}_output_register_measuring_"
             f"{cfg.param_R}_R/{d_mode}_{qd_mode}/n_{n}_R_{R}"
         )
     else:
-        path = f"output_data/{main_path_dir}/all_parts/quantum_part/{d_mode}_{qd_mode}"
+        path = f"output_data/{main_path_dir}/all_parts/{d_mode}_{qd_mode}"
     return _ensure(path)
 
 
@@ -98,6 +98,7 @@ def circuit_image_dirs(
     qd_mode: str,
     n: int,
     R: float,
+    N: int,
     cfg: Optional[MeasRConfig],
     gauss_init,
 ) -> tuple[str, str]:
@@ -105,12 +106,11 @@ def circuit_image_dirs(
     if gauss_init and cfg is not None:
         base = (
             f"images/{main_path_dir}/quantum_part/{_gauss_variant_dir(cfg)}/"
-            f"{d_mode}_{qd_mode}/n_{n}_R_{R}/N_"
+            f"{d_mode}_{qd_mode}/n_{n}_R_{R}/N_{N}"
         )
         return base, base
-    general = f"images/publikacja/general/{d_mode}_{qd_mode}"
-    decomposed = f"images/publikacja/decomposed/{d_mode}_{qd_mode}"
-    return general, decomposed
+    base = f"images/{main_path_dir}/quantum_part/{d_mode}_{qd_mode}/N_{N}"
+    return base, base
 
 
 def find_gauss_quantum_file(
