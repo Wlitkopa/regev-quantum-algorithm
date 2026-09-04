@@ -1,0 +1,18 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "Extension of Regev's Algorithm Implementation with Gaussian-superposed Initial States"
+authors:
+  - given-names: "Przemysław"
+    family-names: "Pawlitko"
+    orcid: "https://orcid.org/0009-0002-9497-940X"
+    affiliation: "AGH University of Krakow"
+version: "1.0.0"
+date-released: "2026-09-03"
+url: "https://github.com/Wlitkopa/regev-quantum-algorithm"
+license: Apache-2.0
+keywords:
+  - quantum-computing
+  - Regev-algorithm
+  - integer-factorization
+  - Grover-Rudolph
+  - qiskit
