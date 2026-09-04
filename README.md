@@ -1,4 +1,5 @@
 # Regev's Algorithm for IBM Qiskit
+[![DOI](https://zenodo.org/badge/867699383.svg)](https://doi.org/10.5281/zenodo.22310588)
 
 This repository contains an implementation of the quantum Regev's algorithm. Its input
 registers are initialised in a multidimensional Gaussian superposition prepared with
